@@ -1,0 +1,10 @@
+*~
+*.class
+project/target
+target
+tmp
+logs
+\#*\#
+
+*2.scala
+.\#*
