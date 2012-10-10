@@ -77,14 +77,14 @@ trait AbstractArrow {
  	case (pred , self@Tuple(arrows)) =>{
 	  val xs = arrows.map(_(pred));
 	  TupleObject(xs.map(_._1)) -> 
-	  NTuple(xs.map(_._2))
+	  VTuple(xs.map(_._2))
 	}
 
  	case (pred , self@NamedTuple(namedarrows)) =>{
 	  val xs = for {(s,arr) <- namedarrows} 
 			   yield (s,arr(pred))
 	  TupleObject(xs.map(_._2._1)) -> 
-	  NTuple(xs.map(_._2._2))
+	  VTuple(xs.map(_._2._2))
 	}
 
   }
