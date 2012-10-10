@@ -20,8 +20,8 @@ object Mappers{
 	
     val syain2dept = ColArrow(syain, SyainId, DeptId, "id", "dept_id")
 	
-    val syain2superior = ColArrow(syain,SyainId, SyainId, "id", "superior_id")
-    val syain2subordinates = ~syain2superior
+    val syain2boss = ColArrow(syain,SyainId, SyainId, "id", "boss_id")
+    val syain2subordinates = ~syain2boss
   }
   import ForeginArrows._
   object Dept extends forTableOf(Tables.dept){
@@ -42,7 +42,7 @@ object Mappers{
     val dept = syain2dept
     val info = ColArrow(syainInfo,Id, DeptId, "id", "info")
     val hobbies = ~hobby2syain
-    val superior = syain2superior
+    val boss = syain2boss
     val subordinates = syain2subordinates
   }
   object Hobby extends forTableOf(Tables.hobby){

@@ -15,9 +15,9 @@ object SampleData{
 	//import RootCat._
 	import RawValImplicits._
 	Tables.syain.insertRows(
-	  List("age"-> 15, "name"-> "hokari", "dept_id" -> 1, "superior_id" -> 1),
-	  List("age"-> 16, "name"-> "mikio", "dept_id" -> 1, "superior_id" -> 1),
-	  List("age"-> 17, "name"-> "keiko", "dept_id" -> 2, "superior_id" -> 2))
+	  List("age"-> 15, "name"-> "hokari", "dept_id" -> 1, "boss_id" -> 1),
+	  List("age"-> 16, "name"-> "mikio", "dept_id" -> 1, "boss_id" -> 1),
+	  List("age"-> 17, "name"-> "keiko", "dept_id" -> 2, "boss_id" -> 2))
 	Tables.dept.insertRows(
 	  List("name"-> "kaihatu", "area_id" -> 1 ),
 	  List("name"-> "kenkyu",  "area_id" -> 1))

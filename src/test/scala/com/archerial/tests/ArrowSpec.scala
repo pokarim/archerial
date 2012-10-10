@@ -33,7 +33,7 @@ class ArrowSpec extends Specification {
 	SampleData.createTables 
 	SampleData.insertSampleData
 
-	val sup = Syain.superior
+	val sup = Syain.boss
 	val sub = ~sup
 	val name = Syain.name
 	val supname = sup >>> name

@@ -7,7 +7,7 @@ object Tables extends Metadata{
     Column("name", ColType.varchar(200)),
     Column("age", ColType.int),
     Column("dept_id", ColType.int),
-    Column("superior_id", ColType.int)
+    Column("boss_id", ColType.int)
   ))
   val syainInfo = Table("syainInfo", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
