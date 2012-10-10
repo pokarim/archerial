@@ -32,7 +32,7 @@ object `package` {
 }
 case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
   val trees = colInfo.trees
-  lazy val tree2rows_t2c2v2r = getTree2RowsAndT2c2v2r()//getTree2Rows()
+  lazy val tree2rows_t2c2v2r = getTree2RowsAndT2c2v2r()
   lazy val tree2rows = tree2rows_t2c2v2r._1
   lazy val t2c2v2r = tree2rows_t2c2v2r._2
   lazy val c2v2r:C2V2R = for {(t,c2v2r) <- t2c2v2r
@@ -69,10 +69,10 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	val comprows = if(ttree.node == UnitTable)List(Row()) else {
 	  val rootValues = t2c2v2r(ttree.node)(rootCol).keys.toSeq
 	  rootValues.flatMap(
-		getCompRows(_,ttree,table2argcol,t2c2v2r))//.distinct
+		getCompRows(_,ttree,table2argcol,t2c2v2r))
 	}
 	val select = Select.gen(tree,colInfo.tree_col(tree))
-	val newRows = select.getRows(comprows)//.distinct)
+	val newRows = select.getRows(comprows)
 	newRows
   }
 

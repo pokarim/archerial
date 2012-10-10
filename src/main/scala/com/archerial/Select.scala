@@ -78,6 +78,8 @@ case class Select(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColEx
 object Select {
 
   def gen(tree:TableTree,colExps: Seq[ColExp]) = {
+	assert(colExps.nonEmpty,
+		 "Select.gen.colExps must be nonEmpty")
 	val tableExps:Seq[TableExp] = tree.tableExps
 	val tableExpsTail = tableExps.tail
 	val rootTableExp = tableExps.head
@@ -89,7 +91,7 @@ object Select {
 	assert(! tableList.isEmpty, "require nonEmpty")
 	val optCols = tree.getOptionalCols
 	val normalCols = 
-	  (colExps 
+	  (colExps
 	   ++ colExps.flatMap(_.tables.map(_.pk))
 	 ).distinct.toList
 	Select(tree, 

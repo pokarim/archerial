@@ -56,6 +56,8 @@ object ValueExpTools{
 	case Left(NTuple(exps)) => exps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Left(cond),Right(tableNode))
+	case Left(ConstCol(ConstantColExp(t,value))) => 
+	  List(Left(Col(t.pk)),Right(t))
 	case Right(JoinNode(_,leftcol,_)) => List(Left(leftcol))
 	case Left(Col(colNode)) => List(Right(colNode.table))
 	case _ => Nil
@@ -66,6 +68,8 @@ object ValueExpTools{
 	case Left(NTuple(exps)) => exps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Right(tableNode))
+	case Left(ConstCol(ConstantColExp(t,value))) => 
+	  List(Right(t))
 	case Right(JoinNode(_,leftcol,_)) => List(Right(leftcol.table))
 	case Left(Col(colNode)) => List(Right(colNode.table))
 	case _ => Nil

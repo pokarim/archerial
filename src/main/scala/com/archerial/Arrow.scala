@@ -18,75 +18,20 @@ package com.archerial
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
-sealed trait Arrow {
-  import OpArrows._
-
-  def eval(sp:ValueExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
-	valueExp.eval(sp)
-  }
-  def dummy = "abc"
-  def dom:Object
-  def cod:Object
-  def unary_~ : Arrow
-  def domcol:Option[Column]
-
-  def getTableUnit :(Object,ValueExp) = dom match {
-	case obj : ColObject => (obj,Col(obj.getColNode()))
-  }
-
-  def valueExp():ValueExp = 
-	apply(getTableUnit)._2
-
-  def apply(pred: (Object,ValueExp)):(Object,ValueExp) = ((pred,this) : @unchecked) match {
-	case (pred, self: IdentityArrow) => {
-	  self match{
-	  case IdentityArrow(obj@ColObject(table,column)) =>{
-		ColArrow(table, ColObject(table, column),
-				 ColObject(table, column),
-				 column,column)(pred)
-	  }
-	  case _ => pred
-	}}
-	case ((_, pred:Col), self@ColArrow(table, _, cod, dcol, ccol)) => {
-	  (cod, Col(JoinNode.joinWith(table, pred, dcol), ccol))
-	}
-
-	case (pred ,self@ComposeArrow(left, right)) => 
-	  right(left(pred))
-
-	case (pred@(obj,_), left =:= right) =>{
-	  val (objL, l) = left(pred)
-	  val (objR, r) = right(pred)
-	  (obj,OpExps.=:= (l,r))
-	}
-
-	case (_ ,arr@ConstantArrow(x)) => (arr.getObject,ConstantExp(x))
-
-	case (pred  , FilterArrow(cond)) => {
-	  val pred2@(obj:ColObject, Col(ColNode(cTable, cCol))) = pred._1.id(pred)
-	  val (_,condExp) = cond(pred2)
-	  (obj,Col(WhereNode(cTable, condExp), obj.column ))
-	}
-
- 	case (pred , self@TupleArrow(arrows)) =>{
-	  val xs = arrows.map(_(pred));
-	  TupleObject(xs.map(_._1)) -> 
-	  NTuple(xs.map(_._2))
-	}
-  }
-
-
-  def =:=(right:Arrow) = {new OpArrows.=:=(this,right)}
-  
-  def >>>(other:Arrow) = ComposeArrow.gen(this,other)
-  def isIdentity = false
+sealed trait Arrow extends AbstractArrow{
 }
 
+case class AllOf(cod:ColObject) extends Arrow{
+  def dom = UnitObject
+  def unary_~ : Arrow = 
+	throw new java.lang.UnsupportedOperationException(
+	  "AllOf().inverse")
+}
+
+
 trait EndoMap extends Arrow{
-  def domcol: Option[Column] = dom.columnOption
   def cod = dom
   def unary_~ : Arrow = this
-  def codcol:Option[Column] = cod.columnOption
 }
 
 
@@ -95,8 +40,6 @@ object OpArrows{
   {
 	def dom = left.dom
 	def cod = BoolObject
-	def domcol:Option[Column] = left.domcol
-	def codcol:Option[Column] = None
 	def unary_~ : Arrow = throw new Exception("=:=.unary") 
   }
 
@@ -109,10 +52,8 @@ case class ConstantArrow(x: RawVal) extends Arrow {
 		case _ :Str => StrObject
 	  }
   }
-	def dom = getObject
+	def dom = UnitObject
 	def cod = getObject
-	def domcol:Option[Column] = None
-	def codcol:Option[Column] = None
 	def unary_~ : Arrow = this
 }
 
@@ -127,28 +68,24 @@ case class IdentityArrow(dom:Object) extends EndoMap{
 
 object ColArrow{
 
-  def apply(table:Table, dom:Object, cod:Object, domcolname :String, codcolname :String):ColArrow =
+  def apply(table:Table, dom:ColObject, cod:ColObject, domcolname :String, codcolname :String):ColArrow =
 	apply(table, dom, cod, table(domcolname), table(codcolname))
 
-  def apply(dom:Object, cod:Object, domcolname :String, codcolname :String)(implicit table:Table):ColArrow =
+  def apply(dom:ColObject, cod:ColObject, domcolname :String, codcolname :String)(implicit table:Table):ColArrow =
   	apply(table, dom, cod, table(domcolname), table(codcolname))
 						  
 }
 
-case class ColArrow(table:Table, dom:Object, cod:Object,
-						_domcol :Column, _codcol :Column) extends Arrow{
-  def domcol = Some(_domcol)
-  def codcol = Some(_codcol)
-  def name = _domcol.name ++ " -> " ++ _codcol.name
-  def unary_~ : Arrow = ColArrow(table,cod,dom, _codcol,_domcol)
+case class ColArrow(table:Table, dom:ColObject, cod:ColObject,
+						domcol :Column, codcol :Column) extends Arrow{
+  def name = domcol.name ++ " -> " ++ codcol.name
+  def unary_~ : Arrow = ColArrow(table,cod,dom, codcol, domcol)
 }
 
 
 case class TupleArrow(arrows: List[Arrow]) extends Arrow {
 
-  def domcol: Option[Column] = arrows.head.domcol
-  def unary_~ = {assert(false);null} //TupleArrow(arrows.map(~_)) 
-  def codcol = None
+  def unary_~ = {assert(false);null}
   def dom = arrows.head.dom
   def cod = arrows.head.cod
 
@@ -159,14 +96,14 @@ object TupleArrow{
 
  
 case class ComposeArrow(left:Arrow,right:Arrow) extends Arrow {
-
-  def domcol: Option[Column] = left.domcol
   def dom = left.dom
   def cod = right.cod
-  //def codcol:Option[Column] = right.codcol
   override def toString:String = "(%s ++ %s)" format (left,right)
   def unary_~ : Arrow = (~right)>>>(~left)
-  require (left.cod == right.dom,(left.cod ,"must be", right.dom))
+  require (
+  	left.cod == right.dom || right.dom == UnitObject,
+  	"A >>> B, A.cod must be equal to B.dom but %s != %s"
+  	format (left.cod , right.dom))
 }
 object ComposeArrow{
   def gen(left:Arrow,right:Arrow):Arrow = if (right.isIdentity) left else

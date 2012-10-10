@@ -24,11 +24,8 @@ object ColObject{
   def apply(table:Table,columnName:String):ColObject = 
 	ColObject(table,table(columnName))
 
-  def apply(columnName:String)(implicit table:Table):ColObject = 
-	ColObject(table,table(columnName))
+  def apply(columnName:String)(implicit table:Table):ColObject =	ColObject(table,table(columnName))
 
-  // def apply(column:Column):ColObject = 
-  // 	ColObject(column.table,column)
 }
 case class ColObject(table_ :Table, column:Column ) extends Object{
   override lazy val id = IdentityArrow(this)
@@ -43,3 +40,4 @@ object IntObject extends Object
 object StrObject extends Object
 
 case class TupleObject( objects:Seq[Object] ) extends Object
+object UnitObject extends Object

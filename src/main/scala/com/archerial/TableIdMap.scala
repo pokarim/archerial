@@ -19,12 +19,12 @@ import scala.collection.immutable
 import implicits._
 
 case class TableIdMap(root:TableExp, _map: immutable.Map[TableExp,String]) {
-  def contains(x:TableExp) = !gets(x).isEmpty//_map.contains(x.getColsRefTarget)
+  def contains(x:TableExp) = !gets(x).isEmpty
   def addKeyAlias(from:TableExp,to:TableExp) = 
 	copy(_map=_map.updated(to, _map(from) ))
-  def apply(x:TableExp):String = gets(x).get//p_map(x)//.getColsRefTarget)
+  def apply(x:TableExp):String = gets(x).get
   def gets(x:TableExp):Option[String] = 
-  	_map.get(x)//.getColsRefTarget)
+  	_map.get(x)
 
   def isRoot(t:TableExp) = t == root
 }

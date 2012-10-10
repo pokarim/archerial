@@ -26,23 +26,16 @@ case class Row(map : immutable.Map[ColExp,Value]=Map()){
   def contains(c:ColExp) = (c == UnitColExp || map.contains(c))
   def d(colnode:ColExp) =
 	getDirectValue(colnode)
-  
-  lazy val normMap = for {(k,v) <- map } // TODO 効率悪いな
-  yield k match {
-	case ColNode(t,column) => 
-	  ColNode(t.getColsRefTarget,column) -> v
-	case _ => k -> v}
 	
-
   def getDirectValue(colnode:ColExp) = {
 	colnode match {
 	  case UnitColExp => UnitValue
 	  case c if contains(c) => map(c)
+	  case ConstantColExp(t,value) => Val(value,1)
 	  case ColNode(t,column) => {
 		val target = ColNode(t.getColsRefTarget,column)
 		if (contains(target))
 		  map(target)
-		//if (normMap.contains(target.getColsRefTarget)
 		else{
 		  assert(false,("NotFound",colnode,"in",map))
 		  map(target)
@@ -50,23 +43,14 @@ case class Row(map : immutable.Map[ColExp,Value]=Map()){
 	  }
 	}
   }
-  def apply(colnode:ColExp):Value = map.getOrElse(
-	colnode,ErrorValue("Not Found In Row"))
 
   def get(colnode:ColExp):Option[Value] = map.get(colnode)
 }
 
 object Row{
-  //val UnitRows =List(Row(Map(UnitColExp-> UnitValue))
   def apply(xs: Seq[(ColExp, Value)]):Row = apply(xs.toMap)
   def gen(cols:List[ColExp], data :List[Any]):Row = 
-	apply(cols.zip(data).map{case (x,y) => (x, 
-											x.parse2Val(y)
-										  )}.toMap)
+	apply(cols.zip(data).map{
+	  case (x,y) => (x, x.parse2Val(y))}.toMap)
 
-  def gen2(cols:List[ColExp], data:List[Any], parentRow:Option[Row]):Row = 
-	apply( 
-	  parentRow.map(_.map).getOrElse(immutable.Map()) ++
-	  cols.zip(data).map{case (x,y) => (x, x.parse2Val(y))}.toMap)
-  
 }

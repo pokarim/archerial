@@ -88,18 +88,30 @@ case class ConstantExp(x:RawVal) extends ValueExp {
 	List(Val(x,1))
   }
 
-  override def getSQL(map: TableIdMap):String = 	x.toSQLString
+  def getSQL(map: TableIdMap):String = 	x.toSQLString
 }
 object Col{
-  // implicit val toDOC = ValueExp.toDOC _
   def apply(table: TableExp, column: Column) = 
 	new Col(ColNode(table,column))
 }
 
+object UnitCol extends Col(UnitTable.pk)
 
+case class ConstCol(constColExp:ConstantColExp) extends ValueExp{
+  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter) = 
+  ColEvalTool.eval(
+	constColExp, constColExp.table, vcol, values, getter)
+
+  def value = Val(constColExp.value,1)
+  def getSQL(map:TableIdMap):String = 
+	constColExp.getSQL(map)
+  def getDependentCol():Stream[ColExp] = 
+	Stream.Empty 
+  def rows2value(rows:Seq[Row] ): Seq[Value] =
+	for (_ <- rows) yield value
+
+}
 case class Col(colNode: ColNode) extends ValueExp{
-//  assert(!Option(id).isEmpty)
-  assert(!Option(colNode).isEmpty)
   def getDependentCol():Stream[ColExp] = 
 	if (colNode == pk)
 	  Stream(pk)
@@ -110,34 +122,40 @@ case class Col(colNode: ColNode) extends ValueExp{
   def column = colNode.column
 
   val pk = table.primaryKeyCol
-	
 
   override def rows2value(rows:Seq[Row] ): Seq[Value] = {
 	if (this == pk)
-	  for (row <- rows) yield row(colNode)
+	  for (row <- rows) yield row.d(colNode)
 	else {
-	  val kvs = for (row <- rows; val pkv = row(pk); if !pkv.isNull)
-				yield (pkv, row(colNode));
+	  val kvs = for (row <- rows; val pkv = row.d(pk); if !pkv.isNull)
+				yield (pkv, row.d(colNode));
 	  SeqUtil.distinctBy1stAndGet2nd(kvs).toList
 	}
   }
   import StateUtil.forS
 			 
-  override def getSQL(map: TableIdMap):String =	"%s.%s" format(map.gets(table).get, column.name)
+  def getSQL(map: TableIdMap):String =	"%s.%s" format(map.gets(table).get, column.name)
 
   override def toShortString:String = column.name
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
 
-  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val xs = getter.colInfo.table_tree(colNode.table)
-	val tree = getter.colInfo.table_tree.one(colNode.table)
+  override def evalCol(colExp:ColExp):ColExp = colNode
+override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ) = 
+  ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)
+}
+
+
+object ColEvalTool{
+  def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
+	val xs = getter.colInfo.table_tree(table)
+	val tree = getter.colInfo.table_tree.one(table)
 	val vtrees = getter.colInfo.table_tree(vcol.tables.head)
 	val (ptree,pcol,pvalues) =
 	if (!vtrees.contains(tree) ){
 	  val ptree = 
 		getter.colInfo.table_tree.one(
 		  tree.node.directParent.get)
-	  val pcol = tree.node.rootCol.asInstanceOf[ColNode]// TODO
+	  val pcol = tree.node.rootCol.asInstanceOf[ColNode]//TODO
 	  val ptree2 = getter.colInfo.table_tree.one(pcol.tables.head)
 	  assert(ptree == ptree2,"ptree == ptree2")
 	  val pvals = Col(pcol).eval(vcol,values,getter)
@@ -148,58 +166,38 @@ case class Col(colNode: ColNode) extends ValueExp{
 	}
 	val prows = getter.tree2rows(tree)
 	val c2v2r = 
-	  if (getter.t2c2v2r(colNode.table).contains(pcol) || pcol == UnitTable.pk)
-		getter.t2c2v2r(colNode.table)
+	  if (getter.t2c2v2r(table).contains(pcol) 
+		  || pcol == UnitTable.pk)
+		getter.t2c2v2r(table)
 	  else
 		getter.t2c2v2r(pcol.tables.head)
-	if(true){
-	  if (pcol == UnitTable.pk){
-		if(colNode ==colNode.tables.head.pk){
-		  c2v2r(colNode).keys.toSeq
-		}else{
-		  c2v2r(colNode.tables.head.pk).values.toSeq.flatMap(_.map(_.d(colNode)))
-		}
-	  } else {
+	
+	if (pcol == UnitTable.pk){
+	  if(colExp ==table.pk){
+		c2v2r(colExp).keys.toSeq
+	  }else{
+		c2v2r(table.pk).values.toSeq.flatMap(_.map(_.d(colExp)))
+	  }
+	} else {
 	  for {v <- pvalues
 		   row <- c2v2r(pcol).getOrElse(v,Nil)}
-	  yield {
-		if (!row.contains(colNode)){
-		  pprn("row:",row)
-		  pprn("colNode",colNode)
-		}
-		row.d(colNode)}
-	  }
-	}else {
-	  if (prows.nonEmpty && (!prows(0).contains(pcol) || !prows(0).contains(colNode))){
-		pprn("row",prows(0))
-		pprn("pcol",pcol)
-		pprn("colNode",colNode)
-	  }
-	  val d2c = Rel(
-		for {row <- prows} 
-		yield row.d(pcol) -> row.d(colNode))
-	  pvalues.flatMap(d2c(_))
+	  yield row.d(colExp)
 	}
   }
-  override def evalCol(colExp:ColExp):ColExp = colNode
-
 }
+
 case class NTuple(exps :List[ValueExp]) extends ValueExp{
   assert(!exps.isEmpty,"!exps.isEmpty")
   override def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
 	val ks = keyExp.eval(colExp,values,getter)
 	val kcol = keyExp.evalCol(colExp)
-	
 	for {k <- ks}
 	yield {
-
 	  VTuple(VList(k) :: 
 	  (for {vexp <- valExps}
 	   yield VList(vexp.eval(kcol,List(k),getter).toSeq :_* )) :_*)
 	}
   }
-
-
 
   def keyExp = exps.head
   def valExps = exps.tail
@@ -222,11 +220,5 @@ case class NTuple(exps :List[ValueExp]) extends ValueExp{
   def getSQL(map: TableIdMap):String = {
 	throw new Exception("invalid operation")
   }
-
-  // def parents: List[ValueExp] = exps
-
-}
-object NTuple{
-  // implicit val toDOC = ValueExp.toDOC _
 }
 

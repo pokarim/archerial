@@ -59,7 +59,7 @@ sealed trait TableExp {
 
 object UnitTable extends TableExp{
   def directParent:Option[TableExp] = None
-  def argCols:List[ColExp] = List(primaryKeyCol)//Nil
+  def argCols:List[ColExp] = List(primaryKeyCol)
   def getSQL(map: TableIdMap):String =
 	throw new Exception("not imple")
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
@@ -68,18 +68,18 @@ object UnitTable extends TableExp{
 
   def altRoot:Option[TableExp] = None
   val primaryKeyCol:ColNode = ColNode(UnitTable,
-									  Column("UnitPK",ColType("UnitPK"))) // TODO fix eq
+									  Column("UnitPK",ColType("UnitPK"))) 
   val UnitColExp = primaryKeyCol
 }
 import UnitTable.UnitColExp
 case class TableNode(table: Table) extends TableExp{
   def directParent:Option[TableExp] = Some(UnitTable)
-  def argCols:List[ColExp] = List(UnitTable.primaryKeyCol)//Nil
+  def argCols:List[ColExp] = List(UnitTable.primaryKeyCol)
 
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[ValueExp] = Nil
   
-  def altRoot:Option[TableExp] = Some(this)//None
+  def altRoot:Option[TableExp] = Some(this)
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
 
   def primaryKeyCol:ColNode = ColNode(this,table.primaryKey)

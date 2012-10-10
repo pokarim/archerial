@@ -110,8 +110,11 @@ object TableTreeToDOC{
 
 object FromColExp{
   import ToDocImplicits._
-  import com.archerial.{ColNode,ColExp}
+  import com.archerial.{ColNode,ColExp,ConstantColExp}
   def toDOC(x:ColExp):DOC = x match {
+	case ConstantColExp(table,x) =>
+	  labeledRBracketWC("ConstColExp", List[DOC](hashCodeStr(table),x:DOC))
+	  
 	case x@ColNode(table,column) =>
 	  labeledRBracketWC("ColNode", List[DOC](hashCodeStr(table),column.name))
 
