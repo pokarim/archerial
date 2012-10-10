@@ -5,6 +5,7 @@ target
 tmp
 logs
 \#*\#
-
+.hg
+.hgignore
 *2.scala
 .\#*
