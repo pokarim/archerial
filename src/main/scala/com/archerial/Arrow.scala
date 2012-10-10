@@ -93,9 +93,18 @@ case class Tuple(arrows: List[Arrow]) extends Arrow {
   def dom = arrows.head.dom
   def cod = arrows.head.cod
 }
-
 object Tuple{
   def apply(arrows: Arrow*) = new Tuple(arrows.toList)
+}
+
+case class NamedTuple(arrows: List[(String,Arrow)]) extends Arrow {
+  def unary_~ = {assert(false);null}
+  def dom = arrows.head._2.dom
+  def cod = throw new Exception("not implemented")
+}
+
+object NamedTuple{
+  def apply(arrows: (String,Arrow)*) = new NamedTuple(arrows.toList)
 }
 
 case class Composition(left:Arrow,right:Arrow) extends Arrow {
