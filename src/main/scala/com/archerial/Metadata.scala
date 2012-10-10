@@ -16,7 +16,7 @@
 
 package com.archerial
 import anorm.SQL
-import implicits._
+import com.archerial.utils.implicits._
 
 trait Metadata extends {
   def all:List[Table]

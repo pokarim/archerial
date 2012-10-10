@@ -14,9 +14,11 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
+
 import scala.collection.immutable
-import implicits._
+import com.archerial._
+import com.archerial.utils.implicits._
 
 case class TableIdMap(root:TableExp, _map: immutable.Map[TableExp,String]) {
   def contains(x:TableExp) = !gets(x).isEmpty

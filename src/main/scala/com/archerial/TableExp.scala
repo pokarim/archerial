@@ -14,7 +14,9 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
+import com.archerial._
+
 
 sealed trait Quantity
 object Many extends Quantity
@@ -45,12 +47,12 @@ sealed trait TableExp {
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)]
 	
 
-  final def getOptionalWhereConds(map: TableIdMap,row:Option[Row]):List[ValueExp] ={
+  final def getOptionalWhereConds(map: TableIdMap,row:Option[Row]):List[QueryExp] ={
 	if (!isRoot(map)) Nil
 	else optionalCondsWithRoot(map,row)
   }
 	
-  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[ValueExp]
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
 
   def altRoot:Option[TableExp]
   def getKeyAliases(map: TableIdMap):Option[TableExp] = 
@@ -64,7 +66,7 @@ object UnitTable extends TableExp{
 	throw new Exception("not imple")
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
-  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[ValueExp] = Nil
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
 
   def altRoot:Option[TableExp] = None
   val primaryKeyCol:ColNode = ColNode(UnitTable,
@@ -77,7 +79,7 @@ case class TableNode(table: Table) extends TableExp{
   def argCols:List[ColExp] = List(UnitTable.primaryKeyCol)
 
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
-  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[ValueExp] = Nil
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
   
   def altRoot:Option[TableExp] = Some(this)
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
@@ -89,7 +91,7 @@ case class TableNode(table: Table) extends TableExp{
 	"%s as %s" format(table.name, map(this))
 }
 
-case class WhereNode(tableNode: TableExp, cond :ValueExp) extends TableExp{
+case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
   def directParent:Option[TableExp] = Some(tableNode)
   def argCols:List[ColExp] = (tableNode.primaryKeyCol :: cond.getDependentCol.toList).distinct
 
@@ -102,7 +104,7 @@ case class WhereNode(tableNode: TableExp, cond :ValueExp) extends TableExp{
 	else
 	  List((tableNode.primaryKeyCol, altPrimaryKeyCol.get))
 
-  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[ValueExp]
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
   = {
 	  List(OpExps.=:=(
 		ConstantExp(row.get.get(tableNode.primaryKeyCol).get match {
@@ -155,7 +157,7 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
   def altRoot = Some(TableNode(right))
   def primaryKeyCol:ColNode = ColNode(this,right.primaryKey)
   def altLeftColNode = ColNode(altRoot.get,rightcolumn)
-  override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[ValueExp] = 
+  override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
 	{
 	  val Val(rawval,_) = row.get.getDirectValue(leftcol.colNode)
 	  List(OpExps.=:=(ConstantExp(rawval), 

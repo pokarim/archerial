@@ -14,15 +14,19 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
+
+import com.archerial._
+import com.archerial.utils.{Rel,TreeRel}
+
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
-trait AbstractValueExp4Tree { 
-  this:ValueExp => ;
+trait AbstractQueryExp4Tree { 
+  this:QueryExp => ;
 
   lazy val tableNodeList :List[TableExp] =
-	ValueExpTools.getTableExps(this)
+	QueryExpTools.getTableExps(this)
 
   lazy val table2children:TreeRel[TableExp] = 
 	Rel.gen(tableNodeList)(
@@ -38,16 +42,16 @@ trait AbstractValueExp4Tree {
 	Rel.gen(colListOM)((x:ColNode) => List(x.table))
 
   lazy val colList :List[ColNode] = 
-	ValueExpTools.colNodeList(this).distinct.toList
+	QueryExpTools.colNodeList(this).distinct.toList
 
   lazy val colListOM :List[ColNode] = 
-	ValueExpTools.colNodeListOM(this).distinct.toList
+	QueryExpTools.colNodeListOM(this).distinct.toList
 
 }
 
-trait AbstractValueExp extends AbstractValueExp4Tree{
-  this:ValueExp => ;
-  def eval(sp:ValueExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
+trait AbstractQueryExp extends AbstractQueryExp4Tree{
+  this:QueryExp => ;
+  def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
 	val trees = sp(this)
 	val colInfo = TreeColInfo(col2table,trees)
 	val getter = RowsGetter(colInfo)(connection)

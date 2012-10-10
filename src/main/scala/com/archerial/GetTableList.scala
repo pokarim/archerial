@@ -14,44 +14,45 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
 import scala.collection.immutable
+import com.archerial._
 
-object ValueExpTools{
-  def getValueExps(self:Either[ValueExp,TableExp]):List[ValueExp] = 
+object QueryExpTools{
+  def getQueryExps(self:Either[QueryExp,TableExp]):List[QueryExp] = 
 	self.fold(List(_),(_)=>Nil) ++
-  directParents(self).flatMap(getValueExps)
+  directParents(self).flatMap(getQueryExps)
 
-  def getValueExpsOM(self:Either[ValueExp,TableExp]):List[ValueExp] = 
+  def getQueryExpsOM(self:Either[QueryExp,TableExp]):List[QueryExp] = 
 	self.fold(List(_),(_)=>Nil) ++
-  directParentsOM(self).flatMap(getValueExpsOM)
+  directParentsOM(self).flatMap(getQueryExpsOM)
 
-  def getTableExps(self:ValueExp):List[TableExp] = 
+  def getTableExps(self:QueryExp):List[TableExp] = 
 	getTableExps(Left(self)).reverse.distinct
 
   def getTableExps(self:TableExp):List[TableExp] = 
 	getTableExps(Right(self)).reverse.distinct
 
-  def getTableExps(self:Either[ValueExp,TableExp]):List[TableExp] = 
+  def getTableExps(self:Either[QueryExp,TableExp]):List[TableExp] = 
 	self.fold((_)=>Nil,List(_)) ++
   directParents(self).flatMap((x)=>getTableExps(x).distinct)
 
-  def colNodeList(self:ValueExp):Seq[ColNode] = 
-	getValueExps(Left(self)).flatMap(directColNodes)
+  def colNodeList(self:QueryExp):Seq[ColNode] = 
+	getQueryExps(Left(self)).flatMap(directColNodes)
 
-  def colNodeListOM(self:ValueExp):Seq[ColNode] = 
-	getValueExpsOM(Left(self)).flatMap(directColNodes)
+  def colNodeListOM(self:QueryExp):Seq[ColNode] = 
+	getQueryExpsOM(Left(self)).flatMap(directColNodes)
 
   def colNodeList(self:TableExp):List[ColNode] =
 	for {Left(cexp) <- directParents(Right(self))
 		 c <- colNodeList(cexp)} yield c
 
-  def directColNodes(self:ValueExp):List[ColNode] = self match {
+  def directColNodes(self:QueryExp):List[ColNode] = self match {
 	case Col(colNode) => List(colNode)
 	case _ => Nil
   }
 
-  def directParents(self:Either[ValueExp,TableExp]):List[Either[ValueExp,TableExp]] = self match{
+  def directParents(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
@@ -63,7 +64,7 @@ object ValueExpTools{
 	case _ => Nil
   }	
 
-  def directParentsOM(self:Either[ValueExp,TableExp]):List[Either[ValueExp,TableExp]] = self match{
+  def directParentsOM(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 

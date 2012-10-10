@@ -14,7 +14,7 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.utils
 import scala.collection.mutable
 
 object SetUtil {
@@ -147,7 +147,7 @@ object toNestedMap{
   import scala.collection.immutable
   import scala.collection.mutable
   def apply[A,B,C](xs: GenTraversableOnce[(A,B,C)]):immutable.Map[A,Map[B,C]] ={
-	import implicits._
+	import com.archerial.utils.implicits._
     val m = mutable.Map[A,mutable.Map[B,C]]()
     for ((a,b,c) <- xs.toSeq) m.setdefault(a, mutable.Map[B,C]())(b) = c
     (for ((k,vs) <- m) yield (k,vs.toMap)).toMap
@@ -243,7 +243,7 @@ object SeqUtil {
 	import scala.collection.mutable.ArrayBuffer
 	import scala.collection.mutable.Map
 	val map = Map[K,ArrayBuffer[V]]()
-	import implicits._
+	import com.archerial.utils.implicits._
 	for ((k,v) <- xs){
 	  map.setdefault(k, new ArrayBuffer[V]).append(v)
 	}
@@ -252,7 +252,7 @@ object SeqUtil {
   def groupBy[X,K,V](xs:Seq[X])(key:X => Option[K], value: X => Option[V]) = {
 	import scala.collection.mutable.ArrayBuffer
 	import scala.collection.mutable.Map
-	import implicits._
+	import com.archerial.utils.implicits._
 	val map = Map[K,ArrayBuffer[V]]()
 	for (x <- xs;
 		 Some(k) <- List(key(x));
@@ -267,7 +267,7 @@ object SeqUtil {
   def groupBy[X,K](key:X => Option[K], xs:Seq[X]) = {
 	import scala.collection.mutable.ArrayBuffer
 	import scala.collection.mutable.Map
-	import implicits._
+	import com.archerial.utils.implicits._
 	val map = Map[K,ArrayBuffer[X]]()
 	for (x <- xs;
 		 Some(k) <- List(key(x))

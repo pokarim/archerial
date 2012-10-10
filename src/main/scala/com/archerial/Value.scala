@@ -18,7 +18,7 @@ package com.archerial
 import anorm.toParameterValue
 import anorm.ParameterValue
 import anorm._
-import implicits._
+import com.archerial.utils.implicits._
 abstract class RawVal() {
   def value:Any
   def toSQLString:String

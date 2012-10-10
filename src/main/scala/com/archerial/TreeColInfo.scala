@@ -14,9 +14,11 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
 import scala.collection.immutable
-import implicits._
+import com.archerial._
+import com.archerial.utils.implicits._
+import com.archerial.utils._
 
 case class TreeColInfo(col2tree:Rel[ColNode,TableExp],trees:Seq[TableTree]){
   val root:TableTree = trees(0)

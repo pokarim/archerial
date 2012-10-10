@@ -14,15 +14,17 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
 import scala.collection.immutable
 import anorm.SQL
+import com.archerial._
+import com.archerial.utils._
 import SeqUtil.groupTuples
-import implicits._
+import com.archerial.utils.implicits._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
-case class Select(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[ValueExp],whereList:List[TableExp]){
+case class Select(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp]){
   assert(! tableExps.isEmpty, "require nonEmpty")
   assert(tree.node == tableExps.head, "hoge root")
   def rootTable:TableExp = tree.node

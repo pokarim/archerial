@@ -14,7 +14,8 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
+import com.archerial._
 import scala.collection.{immutable,mutable}
 import UnitTable.UnitColExp
 object CC{

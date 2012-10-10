@@ -15,15 +15,16 @@
  *  */
 
 package com.archerial.arrows
+
 import com.archerial.objects._
 import com.archerial._
-
+import com.archerial.queryexp._
 import OpArrows._
 
 trait AbstractArrow {
   this:Arrow => ;
   
-  def eval(sp:ValueExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
+  def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
 	valueExp.eval(sp)
   }
   def dummy = "abc"
@@ -31,7 +32,7 @@ trait AbstractArrow {
   def cod:Object
   def unary_~ : Arrow
 
-  def valueExp():ValueExp = {
+  def valueExp():QueryExp = {
 	require(
 	  this.dom == UnitObject,
 	  "valueExp() needs this.dom == UnitObject but %s.dom is %s"
@@ -39,7 +40,7 @@ trait AbstractArrow {
 	apply((UnitObject,UnitCol))._2
   }
 
-  def apply(pred: (Object,ValueExp)):(Object,ValueExp) = ((pred,this) : @unchecked) match {
+  def apply(pred: (Object,QueryExp)):(Object,QueryExp) = ((pred,this) : @unchecked) match {
 	case ((UnitObject,UnitCol), AllOf(obj)) => {
 	  (obj, Col(obj.getColNode()))
 	}

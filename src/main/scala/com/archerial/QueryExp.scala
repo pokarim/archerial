@@ -13,22 +13,24 @@
  *  * See the License for the specific language governing permissions and
  *  * limitations under the License.
  *  */
-package com.archerial
+package com.archerial.queryexp
 
+import com.archerial._
+import com.archerial.utils._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 import scala.collection.immutable
-import implicits._
+import com.archerial.utils.implicits._
 import SeqUtil.groupTuples
 
-sealed trait ValueExp extends AbstractValueExp
+sealed trait QueryExp extends AbstractQueryExp
 
 object BinOp {
-  def unapply(b:BinOp):Option[(ValueExp,ValueExp)] = Some(b.left -> b.right)
+  def unapply(b:BinOp):Option[(QueryExp,QueryExp)] = Some(b.left -> b.right)
 }
-trait BinOp extends ValueExp{
-  val left:ValueExp
-  val right:ValueExp
+trait BinOp extends QueryExp{
+  val left:QueryExp
+  val right:QueryExp
   def getDependentCol():Stream[ColExp] = left.getDependentCol() ++ right.getDependentCol()
   
   def SQLOpString:String
@@ -57,7 +59,7 @@ trait BinOp extends ValueExp{
 }
 
 object OpExps {
-  case class =:=(left:ValueExp, right:ValueExp) extends BinOp{
+  case class =:=(left:QueryExp, right:QueryExp) extends BinOp{
 
 	def getRawValue(left:RawVal,right:RawVal):Option[RawVal] =
 	  Some(RawVal.Bool(left == right))
@@ -65,7 +67,7 @@ object OpExps {
 	def SQLOpString:String = "="
   }
 
-  case class And(left:ValueExp, right:ValueExp) extends BinOp{
+  case class And(left:QueryExp, right:QueryExp) extends BinOp{
 
 	def getRawValue(left:RawVal,right:RawVal):Option[RawVal] =
 	  (left,right) match {
@@ -75,7 +77,7 @@ object OpExps {
 	def SQLOpString:String = "AND"
   }
 }
-case class ConstantExp(x:RawVal) extends ValueExp {
+case class ConstantExp(x:RawVal) extends QueryExp {
   def getDependentCol():Stream[ColExp] = Stream.Empty
   def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = List(Val(x,1))
 
@@ -92,7 +94,7 @@ object Col{
 
 object UnitCol extends Col(UnitTable.pk)
 
-case class ConstCol(constColExp:ConstantColExp) extends ValueExp{
+case class ConstCol(constColExp:ConstantColExp) extends QueryExp{
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter) = 
   ColEvalTool.eval(
 	constColExp, constColExp.table, vcol, values, getter)
@@ -106,7 +108,7 @@ case class ConstCol(constColExp:ConstantColExp) extends ValueExp{
 	for (_ <- rows) yield value
 
 }
-case class Col(colNode: ColNode) extends ValueExp{
+case class Col(colNode: ColNode) extends QueryExp{
   def getDependentCol():Stream[ColExp] = 
 	if (colNode == pk)
 	  Stream(pk)
@@ -182,7 +184,7 @@ object ColEvalTool{
   }
 }
 
-case class NTuple(exps :List[ValueExp]) extends ValueExp{
+case class NTuple(exps :List[QueryExp]) extends QueryExp{
   assert(!exps.isEmpty,"!exps.isEmpty")
   override def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
 	val ks = keyExp.eval(colExp,values,getter)

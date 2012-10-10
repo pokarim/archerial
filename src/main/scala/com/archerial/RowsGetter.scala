@@ -14,12 +14,14 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
+import com.archerial._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 import scala.collection.immutable,immutable.Map
+import com.archerial.utils._
 
-import implicits._
+import com.archerial.utils.implicits._
 
 import SeqUtil.{groupTuples,distinct}
 
@@ -85,7 +87,7 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 
   def getMapsC(node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
 	val map:Map[ColExp,Map[Value,Seq[Row]]] = maps.getOrElse(node,Map[ColExp,Map[Value,Seq[Row]]]())
-	val ancestorsOrSelf = ValueExpTools.getTableExps(node).toSet
+	val ancestorsOrSelf = QueryExpTools.getTableExps(node).toSet
 	val rows2 = distinct(rows)((row)=>
 	  for {(k,v) <- row.map
 		   if k.tables.forall(ancestorsOrSelf(_))} yield (k,v)

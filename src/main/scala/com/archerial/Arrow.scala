@@ -19,6 +19,7 @@ import com.archerial._
 import com.archerial.objects._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
+import com.archerial.queryexp._
 
 sealed trait Arrow extends AbstractArrow{
 }

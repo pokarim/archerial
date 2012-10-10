@@ -15,6 +15,7 @@
  *  */
 
 package com.archerial.objects
+import com.archerial.queryexp._
 import com.archerial._
 
 trait Object {

@@ -15,10 +15,15 @@
  *  */
 
 package com.pokarim.pprinter.exts
-import  com.pokarim.pprinter._,PPrinter._,ColorUtil.withColor
+
+import com.pokarim.pprinter._,PPrinter._,ColorUtil.withColor
+import com.archerial.queryexp._
+import com.archerial.Table
+import com.archerial.utils.Tree
+import com.archerial._
+import TableHashTool.hashCodeStr
 
 object TableHashTool {
-  import com.archerial.TableExp
   def hashCodeStr(t:TableExp):DOC = {
   val h = t.hashCode.abs
    val hashCodeStr = {
@@ -26,11 +31,8 @@ object TableHashTool {
    }
 	hashCodeStr
   }
-
 }
-import TableHashTool.hashCodeStr
 object ToDocImplicits{
-  import com.archerial.Select
   implicit def fromSelect(x:Select):DOC = x match {
 	case Select(tree, colExps, colExps4Row, tableExps,whereCond,_) => 
 	  labeledRBracketWC("Select", 
@@ -38,9 +40,8 @@ object ToDocImplicits{
   }
 
 
-  import com.archerial.{ValueExp,Col,NTuple,OpExps}
 
-  implicit def fromValueExp(x:ValueExp):DOC = x match {
+  implicit def fromQueryExp(x:QueryExp):DOC = x match {
 	case NTuple(exps) =>
 	  labeledRBracketWC("NTuple", exps.map(x => x:DOC))
 	case Col(colNode) =>
@@ -52,7 +53,6 @@ object ToDocImplicits{
   }
 
 
-  import com.archerial.Table
   implicit def fromTable(x:Table):DOC =  
 	labeledRBracketWC("Table", List[DOC](x.name))
 
@@ -63,15 +63,13 @@ object ToDocImplicits{
   implicit val fromTableIdMap = FromTableIdMap.toDOC _
   implicit val fromRow = FromRow.toDOC _
   implicit val fromValue = FromValue.toDOC _
-  import com.archerial.Tree
   implicit def fromTree[A <% DOC]:Tree[A] => DOC = FromTree.toDOC _
 }
 
 object FromTableExp{
-  import com.archerial.TableExp
   import ToDocImplicits._
+
   implicit def toDOC(x:TableExp):DOC = {
-	import com.archerial._
 	x match {
 	  case UnitTable =>
 		TEXT("UnitTable")
@@ -88,7 +86,6 @@ object FromTableExp{
 }
 object TableTreeToDOC{
   import ToDocImplicits._
-  import com.archerial.TableTree
   def toDOCinner(x:TableTree):DOC = x match {
 	case TableTree(node,xs) =>{
 	  implicit val inner = toDOCinner _
@@ -110,7 +107,6 @@ object TableTreeToDOC{
 
 object FromColExp{
   import ToDocImplicits._
-  import com.archerial.{ColNode,ColExp,ConstantColExp}
   def toDOC(x:ColExp):DOC = x match {
 	case ConstantColExp(table,x) =>
 	  labeledRBracketWC("ConstColExp", List[DOC](hashCodeStr(table),x:DOC))
@@ -122,13 +118,11 @@ object FromColExp{
 
 
 object FromTableIdMap{
-  import com.archerial.TableIdMap
   implicit def toDOC(x:TableIdMap) =
 	labeledRBracketWC("TableIdMap",List[DOC](x._map))
 }
 
 object FromRow{
-  import com.archerial.Row
   import ToDocImplicits.{fromRow => _,_}
 
   def toDOC(x:Row) =
@@ -137,7 +131,6 @@ object FromRow{
 }
 
 object FromTree{
-  import com.archerial.Tree
   def toDOC[A <% DOC](x:Tree[A]):DOC = x match {
 	case Tree(node,xs) =>
 	  (labeledRBracketWC2(
@@ -147,7 +140,6 @@ object FromTree{
 }
 
 object FromValue{
-  import com.archerial._
   def showListLike(docs:Seq[DOC],start:String,end:String,rgb:(Int,Int,Int)):DOC = 
 	showListLike(docs,start,end, 
 				 16 + rgb._1 * 36 + rgb._2 * 6 + rgb._3 * 1)

@@ -14,10 +14,12 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.queryexp
 import scala.collection.immutable.Set
-import implicits._
+import com.archerial.utils.implicits._
+import com.archerial.utils._
 import scalaz.{Value => _, _}, Scalaz._
+import com.archerial._
 import SeqUtil.groupTuples
 import StateUtil.forS
 import TableTree.{Tbx,TbxSet, TTree,TTrees}
@@ -43,7 +45,7 @@ case class TableTree(node:TableExp, children:List[TableTree]){
 
   final def getForeignCols():Seq[ColNode] = 
   	for {table <- allTableExps.toSeq
-		 colNode <- ValueExpTools.colNodeList(table)
+		 colNode <- QueryExpTools.colNodeList(table)
 		 dp <- colNode.getTables
 		 val colsParent = dp.getColsRefTarget
 		 if !contains(colsParent)}
@@ -97,7 +99,7 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColNode], table2children : Tree
 
 object SimpleGenTrees{
 
-  def gen(cexp:ValueExp):List[TTree] = 
+  def gen(cexp:QueryExp):List[TTree] = 
 	gen(cexp.col2tableOM.inverse,cexp.table2children)
 
   def gen(table2col:Rel[TableExp,ColNode],table2children : TreeRel[Tbx]):List[TTree] = {
@@ -105,7 +107,7 @@ object SimpleGenTrees{
 	main :: others.toList
   }
 
-  def splitToPieces(cexp:ValueExp):List[TTree] =
+  def splitToPieces(cexp:QueryExp):List[TTree] =
 	cexp.tableNodeList.map(TableTree(_,Nil)).toList
 
 }
