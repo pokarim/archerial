@@ -22,9 +22,6 @@ import implicits._
 import SeqUtil.groupTuples
 
 sealed trait ValueExp extends AbstractValueExp
-{
-
-}
 
 object BinOp {
   def unapply(b:BinOp):Option[(ValueExp,ValueExp)] = Some(b.left -> b.right)
@@ -65,7 +62,6 @@ object OpExps {
 	def getRawValue(left:RawVal,right:RawVal):Option[RawVal] =
 	  Some(RawVal.Bool(left == right))
 	
-	
 	def SQLOpString:String = "="
   }
 
@@ -78,7 +74,6 @@ object OpExps {
 	  }
 	def SQLOpString:String = "AND"
   }
-
 }
 case class ConstantExp(x:RawVal) extends ValueExp {
   def getDependentCol():Stream[ColExp] = Stream.Empty
@@ -140,10 +135,9 @@ case class Col(colNode: ColNode) extends ValueExp{
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
 
   override def evalCol(colExp:ColExp):ColExp = colNode
-override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
-  ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)//.filter(!_.isNull)
+  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
+  ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)
 }
-
 
 object ColEvalTool{
   def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
@@ -206,7 +200,6 @@ case class NTuple(exps :List[ValueExp]) extends ValueExp{
   def getDependentCol():Stream[ColExp] = 
 	exps.toStream.flatMap(_.getDependentCol())
 
-
   override def rows2value(rows:Seq[Row] ): Seq[Value] = {
 	val kvs = for {row <- rows
 				   k <- exps(0).rows2value(List(row)).headOption.toList
@@ -223,4 +216,3 @@ case class NTuple(exps :List[ValueExp]) extends ValueExp{
 	throw new Exception("invalid operation")
   }
 }
-
