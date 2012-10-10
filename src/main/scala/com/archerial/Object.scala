@@ -24,15 +24,16 @@ object ColObject{
   def apply(table:Table,columnName:String):ColObject = 
 	ColObject(table,table(columnName))
 
-  def apply(columnName:String)(implicit table:Table):ColObject =	ColObject(table,table(columnName))
+  def apply(columnName:String)(implicit table:Table):ColObject =
+	ColObject(table,table(columnName))
 
 }
-case class ColObject(table_ :Table, column:Column ) extends Object{
+
+case class ColObject(table :Table, column:Column ) extends Object{
   override lazy val id = IdentityArrow(this)
   override def columnOption:Option[Column] = Some(column)
-  def table:Option[Table] = Some(table_)
   def name = column.name
-  def getColNode() = ColNode(TableNode(table.get), column)
+  def getColNode() = ColNode(TableNode(table), column)
 }
 
 object BoolObject extends Object

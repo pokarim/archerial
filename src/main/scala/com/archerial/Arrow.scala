@@ -67,12 +67,16 @@ case class IdentityArrow(dom:Object) extends EndoMap{
 }
 
 object ColArrow{
-
+  def apply(dom:ColObject, cod:ColObject):ColArrow = {
+	require(dom.table == cod.table)
+	new ColArrow(dom.table,dom,cod,dom.column,cod.column)
+  }
   def apply(table:Table, dom:ColObject, cod:ColObject, domcolname :String, codcolname :String):ColArrow =
 	apply(table, dom, cod, table(domcolname), table(codcolname))
 
-  def apply(dom:ColObject, cod:ColObject, domcolname :String, codcolname :String)(implicit table:Table):ColArrow =
+  def apply(dom:ColObject, cod:ColObject, domcolname :String, codcolname :String)(implicit table:Table):ColArrow = {
   	apply(table, dom, cod, table(domcolname), table(codcolname))
+  }
 						  
 }
 
@@ -84,12 +88,11 @@ case class ColArrow(table:Table, dom:ColObject, cod:ColObject,
 
 
 case class TupleArrow(arrows: List[Arrow]) extends Arrow {
-
   def unary_~ = {assert(false);null}
   def dom = arrows.head.dom
   def cod = arrows.head.cod
-
 }
+
 object TupleArrow{
   def apply(arrows: Arrow*) = new TupleArrow(arrows.toList)
 }
@@ -113,6 +116,3 @@ object ComposeArrow{
       case _ => new ComposeArrow(left,right)
 	}
 }
-
-
-
