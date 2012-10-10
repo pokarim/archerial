@@ -33,10 +33,10 @@ class ArrowSpec extends Specification {
 	SampleData.createTables 
 	SampleData.insertSampleData
 
-	val sup = Syain.boss
-	val sub = ~sup
+	val boss = Syain.boss
+	val sub = ~boss
 	val name = Syain.name
-	val supname = sup >>> name
+	val bossname = boss >>> name
 	val subname = sub >>> name
 	val syainId = Syain.Id.id
 	val isMikio = name =:= ConstantArrow(Str("mikio"))
@@ -78,18 +78,18 @@ class ArrowSpec extends Specification {
 			))
 	}
 
-	"filter supname subname" in {
+	"filter bossname subname" in {
 	  ((FilterArrow(isMikio) >>> TupleArrow(
 		syainId
 		,name
-		,supname
+		,bossname
 		,subname
 	  )).valueExp.eval().toSet)
 	  TupleArrow(
 		syainId
 		,name
-		,sup >>> name
-		,sup >>> FilterArrow(sup >>> name =:= name) >>> name
+		,boss >>> name
+		,boss >>> FilterArrow(boss >>> name =:= name) >>> name
 	  ).valueExp.eval().toSet === Set(
 		VTuple(VList(Int(1)),
 			   VList(Str("hokari")),
