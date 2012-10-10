@@ -14,10 +14,11 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.objects
+import com.archerial._
 
 trait Object {
-  lazy val id = IdentityArrow(this)
+  lazy val id = arrows.IdentityArrow(this)
   def columnOption:Option[Column] = None
 }
 object ColObject{
@@ -30,7 +31,7 @@ object ColObject{
 }
 
 case class ColObject(table :Table, column:Column ) extends Object{
-  override lazy val id = IdentityArrow(this)
+  override lazy val id = arrows.IdentityArrow(this)
   override def columnOption:Option[Column] = Some(column)
   def name = column.name
   def getColNode() = ColNode(TableNode(table), column)

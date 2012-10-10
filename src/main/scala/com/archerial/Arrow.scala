@@ -14,7 +14,9 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.arrows
+import com.archerial._
+import com.archerial.objects._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
@@ -86,7 +88,6 @@ case class ColArrow(table:Table, dom:ColObject, cod:ColObject,
   def unary_~ : Arrow = ColArrow(table,cod,dom, codcol, domcol)
 }
 
-
 case class TupleArrow(arrows: List[Arrow]) extends Arrow {
   def unary_~ = {assert(false);null}
   def dom = arrows.head.dom
@@ -97,7 +98,6 @@ object TupleArrow{
   def apply(arrows: Arrow*) = new TupleArrow(arrows.toList)
 }
 
- 
 case class ComposeArrow(left:Arrow,right:Arrow) extends Arrow {
   def dom = left.dom
   def cod = right.cod
@@ -108,6 +108,7 @@ case class ComposeArrow(left:Arrow,right:Arrow) extends Arrow {
   	"A >>> B, A.cod must be equal to B.dom but %s != %s"
   	format (left.cod , right.dom))
 }
+
 object ComposeArrow{
   def gen(left:Arrow,right:Arrow):Arrow = if (right.isIdentity) left else
 	left match {

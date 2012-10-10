@@ -1,5 +1,7 @@
 package com.archerial.samples
 import com.archerial._
+import com.archerial.arrows._
+import com.archerial.objects._
 
 object Mappers{
   import Tables._

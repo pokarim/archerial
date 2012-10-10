@@ -14,10 +14,11 @@
  *  * limitations under the License.
  *  */
 
-package com.archerial
+package com.archerial.arrows
+import com.archerial.objects._
+import com.archerial._
 
-
-  import OpArrows._
+import OpArrows._
 
 trait AbstractArrow {
   this:Arrow => ;
