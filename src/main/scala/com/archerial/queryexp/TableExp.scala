@@ -113,7 +113,7 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 
   override def filterRows(rows:Seq[Row]):Seq[Row] = 
 	rows.filter{(row)=>{
-	  val result = cond.rows2value(List(row))
+	  val result = List(cond.row2value(row))
 		result.length > 0 && result.forall{
 		  case Val(RawVal.Bool(true),_) => true
 		  case _ => false}}}

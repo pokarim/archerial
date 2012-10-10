@@ -61,7 +61,7 @@ trait AbstractQueryExp extends AbstractQueryExp4Tree{
 	  getter)
 	vs
   }
-  def rows2value(rows:Seq[Row] ): Seq[Value]
+  def row2value(row:Row ): Value
   def getSQL(map: TableIdMap):String
   def toShortString:String = toString
 

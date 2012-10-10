@@ -17,11 +17,11 @@ package com.archerial.queryexp
 
 import com.archerial._
 import com.archerial.utils._
+import scala.collection.immutable
+import SeqUtil.groupTuples
+
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
-import scala.collection.immutable
-import com.archerial.utils.implicits._
-import SeqUtil.groupTuples
 
 sealed trait QueryExp extends AbstractQueryExp
 
@@ -35,21 +35,19 @@ trait BinOp extends QueryExp{
   
   def SQLOpString:String
   
-  def getRawValue(left:RawVal,right:RawVal):Option[RawVal]
+  def getRawValue(left:RawVal,right:RawVal):RawVal
 
   def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
 	  for {Val(l,ln) <- left.eval(col,values,getter)
 		   Val(r,rn) <- right.eval(col,values,getter)
-		   v <- getRawValue(l,r).toList}
-	yield Val(v, ln * rn)
+		   val v = getRawValue(l,r)}
+	  yield Val(v, ln * rn)
 	}
 
-  def rows2value(rows:Seq[Row] ): Seq[Value] =
-	  for {Val(l,ln) <- left.rows2value(rows)
-		   Val(r,rn) <- right.rows2value(rows)
-		   v <- getRawValue(l,r).toList} 
-	  yield Val(v,ln * rn)
-  
+  def row2value(row:Row ): Value =
+	(left.row2value(row),right.row2value(row)) match {
+	  case (Val(l,ln),Val(r,rn)) =>
+		Val(getRawValue(l,r), ln * rn)} 
   
   def getSQL(map: TableIdMap):String = {
 	val l = left.getSQL(map)
@@ -61,18 +59,18 @@ trait BinOp extends QueryExp{
 object OpExps {
   case class =:=(left:QueryExp, right:QueryExp) extends BinOp{
 
-	def getRawValue(left:RawVal,right:RawVal):Option[RawVal] =
-	  Some(RawVal.Bool(left == right))
+	def getRawValue(left:RawVal,right:RawVal):RawVal =
+	  RawVal.Bool(left == right)
 	
 	def SQLOpString:String = "="
   }
 
   case class And(left:QueryExp, right:QueryExp) extends BinOp{
 
-	def getRawValue(left:RawVal,right:RawVal):Option[RawVal] =
+	def getRawValue(left:RawVal,right:RawVal):RawVal =
 	  (left,right) match {
 		case (RawVal.Bool(l),RawVal.Bool(r)) =>
-		  Some(RawVal.Bool(l && r))
+		  RawVal.Bool(l && r)
 	  }
 	def SQLOpString:String = "AND"
   }
@@ -81,9 +79,8 @@ case class ConstantExp(x:RawVal) extends QueryExp {
   def getDependentCol():Stream[ColExp] = Stream.Empty
   def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = List(Val(x,1))
 
-  override def rows2value(rows:Seq[Row] ): Seq[Value] = {
-	List(Val(x,1))
-  }
+  override def row2value(row:Row ): Value =
+	Val(x,1)
 
   def getSQL(map: TableIdMap):String = 	x.toSQLString
 }
@@ -104,8 +101,7 @@ case class ConstCol(constColExp:ConstantColExp) extends QueryExp{
 	constColExp.getSQL(map)
   def getDependentCol():Stream[ColExp] = 
 	Stream.Empty 
-  def rows2value(rows:Seq[Row] ): Seq[Value] =
-	for (_ <- rows) yield value
+  def row2value(row:Row ): Value = value
 
 }
 case class Col(colNode: ColNode) extends QueryExp{
@@ -120,17 +116,16 @@ case class Col(colNode: ColNode) extends QueryExp{
 
   val pk = table.primaryKeyCol
 
-  override def rows2value(rows:Seq[Row] ): Seq[Value] = {
-	if (this == pk)
+  def row2value(row:Row ): Value = {
+	val rows = List(row)
+	(if (this == pk)
 	  for (row <- rows) yield row.d(colNode)
 	else {
 	  val kvs = for (row <- rows; val pkv = row.d(pk); if !pkv.isNull)
 				yield (pkv, row.d(colNode));
 	  SeqUtil.distinctBy1stAndGet2nd(kvs).toList
-	}
+	}).head
   }
-  import StateUtil.forS
-			 
   def getSQL(map: TableIdMap):String =	"%s.%s" format(map.gets(table).get, column.name)
 
   override def toShortString:String = column.name
@@ -141,48 +136,7 @@ case class Col(colNode: ColNode) extends QueryExp{
   ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)
 }
 
-object ColEvalTool{
-  def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val xs = getter.colInfo.table_tree(table)
-	val tree = getter.colInfo.table_tree.one(table)
-	val vtrees = getter.colInfo.table_tree(vcol.tables.head)
-	val (ptree,pcol,pvalues) =
-	if (!vtrees.contains(tree) ){
-	  val ptree = 
-		getter.colInfo.table_tree.one(
-		  tree.node.directParent.get)
-	  val pcol = tree.node.rootCol.asInstanceOf[ColNode]//TODO
-	  val ptree2 = getter.colInfo.table_tree.one(pcol.tables.head)
-	  assert(ptree == ptree2,"ptree == ptree2")
-	  val pvals = Col(pcol).eval(vcol,values,getter)
-	  val pcol2 = Col(pcol).evalCol(pcol)
-	  (ptree,pcol2,pvals)
-	}else{
-	  (tree,vcol,values)
-	}
-	val prows = getter.tree2rows(tree)
-	val c2v2r = 
-	  if (getter.t2c2v2r(table).contains(pcol) 
-		  || pcol == UnitTable.pk)
-		getter.t2c2v2r(table)
-	  else
-		getter.t2c2v2r(pcol.tables.head)
-	
-	if (pcol == UnitTable.pk){
-	  if(colExp ==table.pk){
-		c2v2r(colExp).keys.toSeq
-	  }else{
-		c2v2r(table.pk).values.toSeq.flatMap(_.map(_.d(colExp)))
-	  }
-	} else {
-	  for {pv <- pvalues;
-		   row <- c2v2r(pcol).getOrElse(pv,Nil)
-		   val v = row.d(colExp)
-		   if v.nonNull}
-	  yield v
-	}
-  }
-}
+//case class NamedTuple(exps :List[QueryExp]) extends QueryExp{
 
 case class NTuple(exps :List[QueryExp]) extends QueryExp{
   assert(!exps.isEmpty,"!exps.isEmpty")
@@ -202,16 +156,9 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp{
   def getDependentCol():Stream[ColExp] = 
 	exps.toStream.flatMap(_.getDependentCol())
 
-  override def rows2value(rows:Seq[Row] ): Seq[Value] = {
-	val kvs = for {row <- rows
-				   k <- exps(0).rows2value(List(row)).headOption.toList
-				   if !k.isNull}
-			  yield (k,row)
-	for ((key,cs) <- groupTuples(kvs).toSeq) yield
-	  VTuple( key.one ::
-			 (for (exp <- exps.tail)
-			  yield VList(exp.rows2value(cs).toSeq :_*)) :_*)
-  }
+  def row2value(row:Row ): Value =
+	 throw new Exception("hoge")
+
   import StateUtil.reduceStates
 
   def getSQL(map: TableIdMap):String = {
