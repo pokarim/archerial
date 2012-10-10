@@ -51,8 +51,8 @@ class SampeSpec extends Specification {
     val name = ColArrow(Id, Name)
     val boss = ColArrow(syainTable, Id, Id, "id", "boss_id")
     val syains = AllOf(Id)
-    val isMikio = name =:= ConstantArrow(Str("mikio"))
-    val isHokari = name =:= ConstantArrow(Str("hokari"))
+    val isMikio = name =:= Const(Str("mikio"))
+    val isHokari = name =:= Const(Str("hokari"))
     
     "simple arrow" in {
       (syains >>> name).eval().toSet ===

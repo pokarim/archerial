@@ -46,7 +46,7 @@ object OpArrows{
   }
 
 }
-case class ConstantArrow(x: RawVal) extends Arrow {
+case class Const(x: RawVal) extends Arrow {
   def getObject:Object = {
 	import RawVal._
 	  x match {
@@ -59,12 +59,12 @@ case class ConstantArrow(x: RawVal) extends Arrow {
 	def unary_~ : Arrow = this
 }
 
-case class FilterArrow(cond:Arrow) extends EndoMap{
+case class Filter(cond:Arrow) extends EndoMap{
   require(cond.cod == BoolObject)
   def dom = cond.dom
 }
 
-case class IdentityArrow(dom:Object) extends EndoMap{
+case class Identity(dom:Object) extends EndoMap{
   override def isIdentity = true
 }
 
@@ -88,17 +88,17 @@ case class ColArrow(table:Table, dom:ColObject, cod:ColObject,
   def unary_~ : Arrow = ColArrow(table,cod,dom, codcol, domcol)
 }
 
-case class TupleArrow(arrows: List[Arrow]) extends Arrow {
+case class Tuple(arrows: List[Arrow]) extends Arrow {
   def unary_~ = {assert(false);null}
   def dom = arrows.head.dom
   def cod = arrows.head.cod
 }
 
-object TupleArrow{
-  def apply(arrows: Arrow*) = new TupleArrow(arrows.toList)
+object Tuple{
+  def apply(arrows: Arrow*) = new Tuple(arrows.toList)
 }
 
-case class ComposeArrow(left:Arrow,right:Arrow) extends Arrow {
+case class Composition(left:Arrow,right:Arrow) extends Arrow {
   def dom = left.dom
   def cod = right.cod
   override def toString:String = "(%s ++ %s)" format (left,right)
@@ -109,11 +109,11 @@ case class ComposeArrow(left:Arrow,right:Arrow) extends Arrow {
   	format (left.cod , right.dom))
 }
 
-object ComposeArrow{
+object Composition{
   def gen(left:Arrow,right:Arrow):Arrow = if (right.isIdentity) left else
 	left match {
-	  case _ : IdentityArrow => right
-      case ComposeArrow(ll,lr) => gen(ll, gen(lr,right))
-      case _ => new ComposeArrow(left,right)
+	  case _ : Identity => right
+      case Composition(ll,lr) => gen(ll, gen(lr,right))
+      case _ => new Composition(left,right)
 	}
 }

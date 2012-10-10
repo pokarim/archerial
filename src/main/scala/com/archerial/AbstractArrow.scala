@@ -43,9 +43,9 @@ trait AbstractArrow {
 	case ((UnitObject,UnitCol), AllOf(obj)) => {
 	  (obj, Col(obj.getColNode()))
 	}
-	case (pred, self: IdentityArrow) => {
+	case (pred, self: Identity) => {
 	  self match{
-	  case IdentityArrow(obj@ColObject(table,column)) =>{
+	  case Identity(obj@ColObject(table,column)) =>{
 		ColArrow(table, ColObject(table, column),
 				 ColObject(table, column),
 				 column,column)(pred)
@@ -55,7 +55,7 @@ trait AbstractArrow {
 	  (cod, Col(JoinNode.joinWith(table, pred, dcol), ccol))
 	}
 
-	case (pred ,self@ComposeArrow(left, right)) => 
+	case (pred ,self@Composition(left, right)) => 
 	  right(left(pred))
 
 	case (pred@(obj,_), left =:= right) =>{
@@ -64,17 +64,17 @@ trait AbstractArrow {
 	  (obj,OpExps.=:= (l,r))
 	}
 
-	case ((obj, col:Col), arr@ConstantArrow(x)) => {
+	case ((obj, col:Col), arr@Const(x)) => {
 	  (arr.getObject, ConstCol(ConstantColExp(col.colNode.table, x)))
 	}
 
-	case (pred  , FilterArrow(cond)) => {
+	case (pred  , Filter(cond)) => {
 	  val pred2@(obj:ColObject, Col(ColNode(cTable, cCol))) = pred._1.id(pred)
 	  val (_,condExp) = cond(pred2)
 	  (obj,Col(WhereNode(cTable, condExp), obj.column ))
 	}
 
- 	case (pred , self@TupleArrow(arrows)) =>{
+ 	case (pred , self@Tuple(arrows)) =>{
 	  val xs = arrows.map(_(pred));
 	  TupleObject(xs.map(_._1)) -> 
 	  NTuple(xs.map(_._2))
@@ -83,6 +83,6 @@ trait AbstractArrow {
 
   def =:=(right:Arrow) = {new OpArrows.=:=(this,right)}
   
-  def >>>(other:Arrow) = ComposeArrow.gen(this,other)
+  def >>>(other:Arrow) = Composition.gen(this,other)
   def isIdentity = false
 }

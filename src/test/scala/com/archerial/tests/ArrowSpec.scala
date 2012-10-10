@@ -42,8 +42,8 @@ class ArrowSpec extends Specification {
 	val bossname = boss >>> name
 	val subname = sub >>> name
 	val syainId = Syain.Id.id
-	val isMikio = name =:= ConstantArrow(Str("mikio"))
-	val isHokari = name =:= ConstantArrow(Str("hokari"))
+	val isMikio = name =:= Const(Str("mikio"))
+	val isHokari = name =:= Const(Str("hokari"))
 	
 	"simple arrow" in {
 	  name.valueExp.eval().toSet ===
@@ -52,7 +52,7 @@ class ArrowSpec extends Specification {
 				   Str("mikio"))
 	}
 	"simple tuple" in {
-	  TupleArrow(syainId, name).valueExp.eval().toSet === 
+	  Tuple(syainId, name).valueExp.eval().toSet === 
 		Set(
 		  VTuple(VList(Int(1)),
 				 VList(Str("hokari"))),
@@ -63,7 +63,7 @@ class ArrowSpec extends Specification {
 	}
 	"simple filter tuple" in {
 	
-	  (FilterArrow(isMikio) >>> TupleArrow(
+	  (Filter(isMikio) >>> Tuple(
 		syainId
 		,name)).valueExp.eval().toSet === 
 		  Set(
@@ -71,8 +71,8 @@ class ArrowSpec extends Specification {
 				   VList(Str("mikio"))))
 	}
 	"filter arrow" in {
-	  ( (FilterArrow(isHokari) >>> 
-		 TupleArrow(syainId ,name,subname)
+	  ( (Filter(isHokari) >>> 
+		 Tuple(syainId ,name,subname)
 	   ).valueExp.eval().toSet) === 
 	  Set(
 	   VTuple(VList(Int(1)),
@@ -82,17 +82,17 @@ class ArrowSpec extends Specification {
 	}
 
 	"filter bossname subname" in {
-	  ((FilterArrow(isMikio) >>> TupleArrow(
+	  ((Filter(isMikio) >>> Tuple(
 		syainId
 		,name
 		,bossname
 		,subname
 	  )).valueExp.eval().toSet)
-	  TupleArrow(
+	  Tuple(
 		syainId
 		,name
 		,boss >>> name
-		,boss >>> FilterArrow(boss >>> name =:= name) >>> name
+		,boss >>> Filter(boss >>> name =:= name) >>> name
 	  ).valueExp.eval().toSet === Set(
 		VTuple(VList(Int(1)),
 			   VList(Str("hokari")),

@@ -18,7 +18,7 @@ package com.archerial.objects
 import com.archerial._
 
 trait Object {
-  lazy val id = arrows.IdentityArrow(this)
+  lazy val id = arrows.Identity(this)
   def columnOption:Option[Column] = None
 }
 object ColObject{
@@ -31,7 +31,7 @@ object ColObject{
 }
 
 case class ColObject(table :Table, column:Column ) extends Object{
-  override lazy val id = arrows.IdentityArrow(this)
+  override lazy val id = arrows.Identity(this)
   override def columnOption:Option[Column] = Some(column)
   def name = column.name
   def getColNode() = ColNode(TableNode(table), column)
