@@ -21,6 +21,7 @@ import org.specs2.mutable._
 import com.archerial._
 import com.archerial.arrows._
 import com.archerial.objects._
+import com.archerial.queryexp._
 
 import com.archerial.samples.{SampleData,Tables,Mappers}
 import com.archerial.samples.Mappers._
