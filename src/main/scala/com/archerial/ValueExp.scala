@@ -140,8 +140,8 @@ case class Col(colNode: ColNode) extends ValueExp{
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
 
   override def evalCol(colExp:ColExp):ColExp = colNode
-override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ) = 
-  ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)
+override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
+  ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)//.filter(!_.isNull)
 }
 
 
@@ -179,9 +179,11 @@ object ColEvalTool{
 		c2v2r(table.pk).values.toSeq.flatMap(_.map(_.d(colExp)))
 	  }
 	} else {
-	  for {v <- pvalues
-		   row <- c2v2r(pcol).getOrElse(v,Nil)}
-	  yield row.d(colExp)
+	  for {pv <- pvalues;
+		   row <- c2v2r(pcol).getOrElse(pv,Nil)
+		   val v = row.d(colExp)
+		   if v.nonNull}
+	  yield v
 	}
   }
 }

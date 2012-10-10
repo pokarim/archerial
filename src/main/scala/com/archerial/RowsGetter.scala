@@ -90,15 +90,21 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	  for {(k,v) <- row.map
 		   if k.tables.forall(ancestorsOrSelf(_))} yield (k,v)
 							 )
-	val root2row:Map[Value,Seq[Row]] = groupTuples({for {row <- rows2}
-					  yield row.d(node.rootCol) -> Row(
-						for {(k,v) <- row.map } yield  (k,v)
-					  )}.distinct)
+	val root2row:Map[Value,Seq[Row]] = groupTuples({
+	  for {row <- rows2
+		   val v = row.d(node.rootCol)
+		   if v.nonNull}
+	  yield v -> Row(
+		for {(k,v) <- row.map} yield  (k,v)
+	  )}.distinct)
 	val pk2row:Map[Value,Seq[Row]] = 
-	  groupTuples({for {row <- rows2}
-					  yield row.d(node.pk) -> Row(
-						for {(k,v) <- row.map } yield  (k,v)
-					  )}.distinct)
+	  groupTuples({
+		for {row <- rows2
+			 val v = row.d(node.pk)
+			 if v.nonNull}
+		yield v -> Row(
+		  for {(k,v) <- row.map } yield  (k,v)
+		)}.distinct)
 	val map2:C2V2R = map ++ Map(
 	  node.rootCol->root2row,
 	   node.pk -> pk2row

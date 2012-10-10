@@ -57,6 +57,7 @@ object Value{
 }
 abstract class Value {
   final def isNull = this match {case Val(RawVal.Null,_) => true; case _ => false}
+  final def nonNull = !isNull
   def one:VList = VList(this) 
 }
 
