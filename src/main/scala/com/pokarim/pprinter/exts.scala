@@ -38,11 +38,11 @@ object ToDocImplicits{
   }
 
 
-  import com.archerial.{ValueExp,Col,VTuple,OpExps}
+  import com.archerial.{ValueExp,Col,NTuple,OpExps}
 
   implicit def fromValueExp(x:ValueExp):DOC = x match {
-	case VTuple(exps) =>
-	  labeledRBracketWC("VTuple", exps.map(x => x:DOC))
+	case NTuple(exps) =>
+	  labeledRBracketWC("NTuple", exps.map(x => x:DOC))
 	case Col(colNode) =>
 	  labeledRBracketWC("Col", List[DOC](hashCodeStr(colNode.table),colNode.column.name))
 	case OpExps.=:=(left,right) =>

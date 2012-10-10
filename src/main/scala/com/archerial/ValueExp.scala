@@ -182,7 +182,7 @@ object ColEvalTool{
   }
 }
 
-case class VTuple(exps :List[ValueExp]) extends ValueExp{
+case class NTuple(exps :List[ValueExp]) extends ValueExp{
   assert(!exps.isEmpty,"!exps.isEmpty")
   override def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
 	val ks = keyExp.eval(colExp,values,getter)

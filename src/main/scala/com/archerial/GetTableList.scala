@@ -53,7 +53,7 @@ object ValueExpTools{
 
   def directParents(self:Either[ValueExp,TableExp]):List[Either[ValueExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
-	case Left(VTuple(exps)) => exps.map(Left(_))
+	case Left(NTuple(exps)) => exps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Left(cond),Right(tableNode))
 	case Left(ConstCol(ConstantColExp(t,value))) => 
@@ -65,7 +65,7 @@ object ValueExpTools{
 
   def directParentsOM(self:Either[ValueExp,TableExp]):List[Either[ValueExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
-	case Left(VTuple(exps)) => exps.map(Left(_))
+	case Left(NTuple(exps)) => exps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Right(tableNode))
 	case Left(ConstCol(ConstantColExp(t,value))) => 
