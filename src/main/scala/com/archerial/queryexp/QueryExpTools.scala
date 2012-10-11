@@ -48,9 +48,9 @@ object ColEvalTool{
 	
 	if (pcol == UnitTable.pk){
 	  if(colExp ==table.pk){
-		c2v2r(colExp).keys.toSeq
+		c2v2r(colExp).keys.toSeq.filter(_.nonNull)
 	  }else{
-		c2v2r(table.pk).values.toSeq.flatMap(_.map(_.d(colExp)))
+		c2v2r(table.pk).values.toSeq.flatMap(_.map(_.d(colExp))).filter(_.nonNull)
 	  }
 	} else {
 	  for {pv <- pvalues;
