@@ -19,6 +19,7 @@ import anorm.toParameterValue
 import anorm.ParameterValue
 import anorm._
 import com.archerial.utils.implicits._
+
 abstract class RawVal() {
   def value:Any
   def toSQLString:String
@@ -74,22 +75,17 @@ object ValueImpilcits{
 }
 object UnitValue extends Value {
 }
-case class ErrorValue(msg:String) extends Value {
-}
+case class ErrorValue(msg:String) extends Value 
 
 object NotImplemented extends ErrorValue("Not Implemented")
 
-case class VPair(left:Value, right:Value) extends Value{
-}
-case class VList(xs: Value*) extends Value{
-  override def toString = 
-	"VList(%s)" format xs.map(_.toString).joinWith(",")
-}
+case class VPair(left:Value, right:Value) extends Value
 
-case class VTuple(xs: Value*) extends Value{
-  override def toString = 
-	"VTuple(%s)" format xs.map(_.toString).joinWith(",")
-}
+case class VList(xs: Value*) extends Value
+
+case class VTuple(xs: Value*) extends Value
+
+case class NamedVTuple(namedValues: (String,Value)*) extends Value
 
 case class VStream(xs: Seq[Value]) extends Value{
   def map(f : Value => Value) = VStream(xs.map(f))

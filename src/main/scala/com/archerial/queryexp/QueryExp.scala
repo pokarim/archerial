@@ -16,6 +16,7 @@
 package com.archerial.queryexp
 
 import com.archerial._
+import com.archerial.objects.ColObject
 import com.archerial.utils._
 import scala.collection.immutable
 import SeqUtil.groupTuples
@@ -136,11 +137,28 @@ case class Col(colNode: ColNode) extends QueryExp{
   ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)
 }
 
-//case class NamedTuple(exps :List[QueryExp]) extends QueryExp{
+case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends QueryExp with TupleExpBase {
+  def keyExp = keycol//dom.id
+  def valExps = exps.map(_._2)
 
-case class NTuple(exps :List[QueryExp]) extends QueryExp{
+  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
+	val ks = keyExp.eval(colExp,values,getter)
+	val kcol = keyExp.evalCol(colExp)
+	for {k <- ks}
+	yield {
+	  NamedVTuple(("__id__", VList(k)) :: 
+	  (for {(name,vexp) <- exps}
+	   yield (name,
+			  VList(vexp.eval(kcol,List(k),getter).toSeq :_* ))
+			) :_*)
+	}
+  }
+
+}
+
+case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
   assert(!exps.isEmpty,"!exps.isEmpty")
-  override def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
+  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
 	val ks = keyExp.eval(colExp,values,getter)
 	val kcol = keyExp.evalCol(colExp)
 	for {k <- ks}
@@ -153,15 +171,5 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp{
 
   def keyExp = exps.head
   def valExps = exps.tail
-  def getDependentCol():Stream[ColExp] = 
-	exps.toStream.flatMap(_.getDependentCol())
 
-  def row2value(row:Row ): Value =
-	 throw new Exception("hoge")
-
-  import StateUtil.reduceStates
-
-  def getSQL(map: TableIdMap):String = {
-	throw new Exception("invalid operation")
-  }
 }

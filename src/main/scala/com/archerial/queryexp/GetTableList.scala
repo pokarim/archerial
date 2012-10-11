@@ -55,6 +55,8 @@ object QueryExpTools{
   def directParents(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
+	case Left(n@NamedTupleQExp(key,exps)) => 
+	  Left(key) :: n.valExps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Left(cond),Right(tableNode))
 	case Left(ConstCol(ConstantColExp(t,value))) => 
@@ -67,6 +69,8 @@ object QueryExpTools{
   def directParentsOM(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
+	case Left(n@NamedTupleQExp(key,exps)) => 
+	  Left(key) :: n.valExps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Right(tableNode))
 	case Left(ConstCol(ConstantColExp(t,value))) => 

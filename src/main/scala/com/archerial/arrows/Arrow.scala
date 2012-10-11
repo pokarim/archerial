@@ -97,7 +97,6 @@ case class Tuple(arrows: List[Arrow]) extends Arrow {
 object Tuple{
   def apply(arrows: Arrow*) = new Tuple(arrows.toList)
 }
-
 case class NamedTuple(arrows: List[(String,Arrow)]) extends Arrow {
   def unary_~ = {assert(false);null}
   def dom = arrows.head._2.dom

@@ -44,6 +44,10 @@ object ToDocImplicits{
   implicit def fromQueryExp(x:QueryExp):DOC = x match {
 	case NTuple(exps) =>
 	  labeledRBracketWC("NTuple", exps.map(x => x:DOC))
+	case NamedTupleQExp(keycol,exps) =>
+	  labeledRBracketWC(
+		"NamedTupleQExp",
+		(keycol :DOC) :: exps.map(x => x:DOC))
 	case Col(colNode) =>
 	  labeledRBracketWC("Col", List[DOC](hashCodeStr(colNode.table),colNode.column.name))
 	case OpExps.=:=(left,right) =>
@@ -166,6 +170,10 @@ object FromValue{
 	  showListLike(xs.xs.map(toDOC),"[","]", (4,5,5))
 
 	case xs:VTuple => showListLike(xs.xs.map(toDOC),"{","}",5)
+	case NamedVTuple(namedValues @_*) =>
+	  showListLike(namedValues.map{case 
+		(x,y)=>
+		(x:DOC,toDOC(y)):DOC},"{","}",5)
 	case Val(rawval:RawVal,num) => 
 	  toDOCfromRawVal(rawval)
 	case ErrorValue(s) => TEXT("ErrorValue(%s)" format s)

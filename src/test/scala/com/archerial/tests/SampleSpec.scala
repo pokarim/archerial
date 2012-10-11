@@ -22,6 +22,8 @@ import com.archerial._
 import com.archerial.arrows._
 import com.archerial.objects._
 import com.archerial.queryexp._
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
 
 import com.archerial.samples.{SampleData,Tables,Mappers}
 import com.archerial.samples.Mappers._
@@ -31,7 +33,19 @@ import ValueImpilcits._
 import RawVal._
 import RawValImplicits._
 import ColType._
-class SampeSpec extends Specification {
+
+
+import com.archerial.exts.ToJson._
+import com.codahale.jerkson.AST._//JValue
+import com.codahale.jerkson.Json.{generate,parse}
+import com.codahale.jerkson.Json
+
+import com.fasterxml.jackson.databind.{MappingJsonFactory, ObjectMapper}
+import com.fasterxml.jackson.core.{JsonGenerator, JsonParser => JacksonParser}
+
+
+
+class SampleSpec extends Specification {
 
   "Sample 1" should {
     val h2driver = Class.forName("org.h2.Driver")
@@ -54,7 +68,11 @@ class SampeSpec extends Specification {
     val syains = AllOf(Id)
     val isMikio = name =:= Const(Str("mikio"))
     val isHokari = name =:= Const(Str("hokari"))
-    
+
+	println(syains.eval().prettyJsonString)
+	println({syains >>> name}.eval().prettyJsonString)
+	println({syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString)
+
     "simple arrow" in {
       (syains >>> name).eval().toSet ===
         Set[Value](Str("hokari"),

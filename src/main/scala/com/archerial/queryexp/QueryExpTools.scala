@@ -65,10 +65,16 @@ object ColEvalTool{
 
 
 trait TupleExpBase {
- //  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-// 	// def keyExp = exps.head
-// 	// def valExps = exps.tail
+  def row2value(row:Row ): Value =
+	 throw new Exception("hoge")
 
-//   }
-// 
+  def getSQL(map: TableIdMap):String = {
+	throw new Exception("invalid operation")
+  }
+
+  def getDependentCol():Stream[ColExp] = 
+	(keyExp::valExps).toStream.flatMap(_.getDependentCol())
+
+  def keyExp:QueryExp
+  def valExps:List[QueryExp]
 }

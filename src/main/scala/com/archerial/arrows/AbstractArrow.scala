@@ -81,11 +81,14 @@ trait AbstractArrow {
 	  NTuple(xs.map(_._2))
 	}
 
- 	case (pred , self@NamedTuple(namedarrows)) =>{
-	  val xs = for {(s,arr) <- namedarrows} 
-			   yield (s,arr(pred))
-	  TupleObject(xs.map(_._2._1)) -> 
-	  NTuple(xs.map(_._2._2))
+ 	case (pred@(obj,col) , self@NamedTuple(namedarrows)) =>{
+	  val xs = for {(s,arr) <- namedarrows
+					val (obj,c) = arr(pred)
+				  } 
+			   yield (s,c,obj)
+	  TupleObject(xs.map(_._3)) -> 
+	  NamedTupleQExp(col
+		,xs.map{case (x,y,_)=>(x,y)})
 	}
 
   }
