@@ -118,7 +118,10 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
   def getCompRows(rootValue:Value,ttree:Tree[TableExp],table2argcol:Rel[TableExp,ColExp],t2c2v2r:T2C2V2R):Seq[Row] = {
 	val node = ttree.node
 	assert(node != UnitTable, "is not UnitTable")
-	val pks = t2c2v2r(node)(node.rootCol)(rootValue).map(_.d(node.pk))
+	val pks = 
+	  if (rootValue.nonNull)
+		t2c2v2r(node)(node.rootCol)(rootValue).map(_.d(node.pk))
+	  else Nil
 	val rows = for {pk <- pks
 					row <- t2c2v2r(node)(node.pk)(pk)}
 			   yield row
