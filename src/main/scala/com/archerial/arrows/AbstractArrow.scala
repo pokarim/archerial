@@ -94,7 +94,7 @@ trait AbstractArrow {
   }
 
   def =:=(right:Arrow) = {new OpArrows.=:=(this,right)}
-  
   def >>>(other:Arrow) = Composition.gen(this,other)
+  
   def isIdentity = false
 }

@@ -49,7 +49,7 @@ class SampleSpec extends Specification {
 
   "Sample 1" should {
     val h2driver = Class.forName("org.h2.Driver")
-    implicit val con = DriverManager.getConnection("jdbc:h2:mem:sampespec", "", "")
+    implicit val con:java.sql.Connection = DriverManager.getConnection("jdbc:h2:mem:sampespec", "", "")
     val syainTable = Table("syain", List(
       Column("id", int.primaryKey),
       Column("name", varchar(200)),
@@ -57,27 +57,107 @@ class SampleSpec extends Specification {
     ))
     syainTable.createTable()
     syainTable.insertRows(
-      List("id"-> 1, "name"-> "hokari", "boss_id" -> 1),
+      List("id"-> 1, "name"-> "hokari", "boss_id" -> Null),
       List("id"-> 2, "name"-> "mikio", "boss_id" -> 1),
-      List("id"-> 3, "name"-> "keiko", "boss_id" -> 2))
+      List("id"-> 3, "name"-> "keiko", "boss_id" -> 2),
+      List("id"-> 4, "name"-> "manabu", "boss_id" -> 1)
+    )
 
     val Id = ColObject(syainTable,"id")
     val Name = ColObject(syainTable,"name")
     val name = ColArrow(Id, Name)
     val boss = ColArrow(syainTable, Id, Id, "id", "boss_id")
     val syains = AllOf(Id)
-    val isMikio = name =:= Const(Str("mikio"))
-    val isHokari = name =:= Const(Str("hokari"))
+    
+    {syains >>> Filter(boss >>> name =:= "hokari") >>> name
+           }.eval().prettyJsonString ===
+             """[ "mikio", "manabu" ]"""
 
-	println(syains.eval().prettyJsonString)
-	println({syains >>> name}.eval().prettyJsonString)
-	println({syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString)
+    syains.eval().prettyJsonString ===
+      """[ 1, 3, 2, 4 ]"""
 
+    {syains >>> name}.eval().prettyJsonString ===
+      """[ "hokari", "keiko", "mikio", "manabu" ]"""
+
+    {syains >>> Filter(name =:= "hokari") >>> name
+           }.eval().prettyJsonString ===
+             """[ "hokari" ]"""
+
+
+    {syains >>> Filter(boss >>> name =:= "hokari") >>> name
+           }.eval().prettyJsonString ===
+             """[ "mikio", "manabu" ]"""
+
+    {syains >>> boss }.eval().prettyJsonString ===
+      """[ 2, 1, 1 ]"""
+    
+    {syains >>> boss >>> name}.eval().prettyJsonString ===
+      """[ "hokari", "hokari", "mikio" ]"""
+
+    {syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
+      """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ]
+}, {
+  "__id__" : [ 3 ],
+  "Name" : [ "keiko" ]
+}, {
+  "__id__" : [ 2 ],
+  "Name" : [ "mikio" ]
+}, {
+  "__id__" : [ 4 ],
+  "Name" : [ "manabu" ]
+} ]"""
+
+    (syains >>> Filter(name =:= "hokari") >>>
+     NamedTuple("Name" -> name,
+                "Boss" -> (boss >>> name),
+                "Subordinates" -> (~boss >>> name)
+              )).eval().prettyJsonString ===
+                """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ],
+  "Boss" : [ ],
+  "Subordinates" : [ "mikio", "manabu" ]
+} ]"""
+
+    {syains >>> Filter(name =:= Const("hokari")) >>>
+             NamedTuple("Name" -> name,
+                        "Boss" -> (boss >>> name),
+                        "Subordinates" -> 
+                        (~boss >>> NamedTuple("Name" -> name))
+                      )
+   }.eval().prettyJsonString ===
+                        """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ],
+  "Boss" : [ ],
+  "Subordinates" : [ {
+    "__id__" : [ 2 ],
+    "Name" : [ "mikio" ]
+  }, {
+    "__id__" : [ 4 ],
+    "Name" : [ "manabu" ]
+  } ]
+} ]"""
+//    }
+    // def `{` = 1
+    // def `}` = 1
+    //       def <%% = 2
+    val allNames = syains >>> NamedTuple("Name" ->name)
+    //pprn(allNames.eval().prettyJsonString)
+    //System.out.println(rr)
+
+    val vs =     (
+      syains >>> NamedTuple("Name" ->name)
+    ).eval()
     "simple arrow" in {
       (syains >>> name).eval().toSet ===
         Set[Value](Str("hokari"),
                    Str("keiko"),
-                   Str("mikio"))
+                   Str("mikio"),
+                   Str("manabu")
+                 )
     }
   }
 }

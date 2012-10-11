@@ -53,6 +53,7 @@ object ToJson{
 	case NamedVTuple(namedValues @_*) =>
 	  JObject(namedValues.map{case (s,v)=> 
 		JField(s,toJValue(v))}.toList)
+	case Val(RawVal.Null,_) => JNull
 	case Val(RawVal.Int(x),_) => JInt(x)
 	case Val(RawVal.Str(x),_) => JString(x)
 	case ErrorValue(s) => JNull

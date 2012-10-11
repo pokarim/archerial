@@ -21,9 +21,11 @@ import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 import com.archerial.queryexp._
 
-sealed trait Arrow extends AbstractArrow{
-}
+sealed trait Arrow extends AbstractArrow
 
+object Arrow{
+  implicit def toConst(x:String):Arrow = Const(RawVal.Str(x))
+}
 case class AllOf(cod:ColObject) extends Arrow{
   def dom = UnitObject
   def unary_~ : Arrow = 
