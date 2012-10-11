@@ -33,9 +33,10 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
   <tr><td>3 </td><td>keiko </td><td>2 </td></tr>
 </table>
 
+まずはテーブルとレコードを用意します。
 
 ```scala
-
+    implicit val conn :java.sql.Connection = ...
     val syainTable = Table("syain", List(
       Column("id", int.primaryKey),
       Column("name", varchar(200)),
@@ -43,33 +44,48 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
     ))
     syainTable.createTable()
     syainTable.insertRows(
-      List("id"-> 1, "name"-> "hokari", "boss_id" -> 1),
+      List("id"-> 1, "name"-> "hokari", "boss_id" -> Null),
       List("id"-> 2, "name"-> "mikio", "boss_id" -> 1),
-      List("id"-> 3, "name"-> "keiko", "boss_id" -> 2))
+      List("id"-> 3, "name"-> "keiko", "boss_id" -> 2),
+      List("id"-> 4, "name"-> "manabu", "boss_id" -> 1))
+```
 
+つぎはマッピングです。
+まずカラムをColObjectにマッピングします。
+ColObjectは１カラムだけのテーブルのようなものです。
+
+```scala
     val Id = ColObject(syainTable,"id")
     val Name = ColObject(syainTable,"name")
+```
+
+Objectの次は,カラムのペアをArrowにマッピングします。
+ColArrowは、２カラムだけのテーブルのようなものです。
+
+
+```scala
     val name = ColArrow(Id, Name)
     val boss = ColArrow(syainTable, Id, Id, "id", "boss_id")
     val syains = AllOf(Id)
     val isMikio = name =:= Const(Str("mikio"))
     val isHokari = name =:= Const(Str("hokari"))
 
-    > println(syains.eval().prettyJsonString)
-    [ 1, 3, 2 ]
-    
-    > println({syains >>> name}.eval().prettyJsonString)
-    [ "hokari", "keiko", "mikio" ]
-    
-    > println({syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString)
-    [ {
-      "__id__" : [ 1 ],
-      "Name" : [ "hokari" ]
-    }, {
-      "__id__" : [ 3 ],
-      "Name" : [ "keiko" ]
-    }, {
-      "__id__" : [ 2 ],
-      "Name" : [ "mikio" ]
-    } ]
+```
+
+
+
+```javascript
+    syains.eval().prettyJsonString ===
+      """[ 1, 3, 2, 4 ]"""
+
+    {syains >>> name}.eval().prettyJsonString ===
+      """[ "hokari", "keiko", "mikio", "manabu" ]"""
+
+    {syains >>> Filter(name =:= "hokari") >>> name
+           }.eval().prettyJsonString ===
+             """[ "hokari" ]"""
+
+    {syains >>> Filter(boss >>> name =:= "hokari") >>> name
+           }.eval().prettyJsonString ===
+             """[ "mikio", "manabu" ]"""
 ```
