@@ -53,6 +53,7 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
 つぎはマッピングです。
 まずカラムをColObjectにマッピングします。
 ColObjectは１カラムだけのテーブルのようなものです。
+RDBの定義域（ドメイン）にも近いものです。
 
 ```scala
     val Id = ColObject(syainTable,"id")
@@ -61,18 +62,29 @@ ColObjectは１カラムだけのテーブルのようなものです。
 
 Objectの次は,カラムのペアをArrowにマッピングします。
 ColArrowは、２カラムだけのテーブルのようなものです。
-
+ColArrowは、入力元の定義域となるColObjectと
+出力先の定義域となるColObjectを持ちます。
+典型的な場合、その２つのオブジェクトを指定するだけでマッピングは完了です。
 
 ```scala
-    val name = ColArrow(Id, Name)
-    val boss = ColArrow(syainTable, Id, Id, "id", "boss_id")
-    val syains = AllOf(Id)
-    val isMikio = name =:= Const(Str("mikio"))
-    val isHokari = name =:= Const(Str("hokari"))
-
+    val name = ColArrow(Id, Name) // Id -> Name
 ```
 
+ここで定義したものはsyainテーブルのidカラムとnameカラムの２列のみからなるテーブルのようなものです。
+次のように、自己結合外部キーと関連して、入力元と出力先のオブジェクトが
+同一となる場合は、各カラム名も指定します。
 
+```scala
+    val boss = ColArrow(Id, Id, syainTable, "id", "boss_id") // Id -> Id
+```
+最後に、入力元としてUnitを取り、出力先として
+Idを取るArrowを定義します。これも、２列のテーブルのようなものですが、
+１列目の値にはUnitしかとらないので、実質意味を持つのは２列目だけであり、
+１列のみのテーブル、単なる集合のようなものとなります。
+
+```scala
+    val syains = AllOf(Id) // Unit -> Id
+```
 
 ```javascript
     syains.eval().prettyJsonString ===
@@ -88,4 +100,58 @@ ColArrowは、２カラムだけのテーブルのようなものです。
     {syains >>> Filter(boss >>> name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
              """[ "mikio", "manabu" ]"""
+
+    {syains >>> boss }.eval().prettyJsonString ===
+      """[ 2, 1, 1 ]"""
+    
+    {syains >>> boss >>> name}.eval().prettyJsonString ===
+      """[ "hokari", "hokari", "mikio" ]"""
+
+    {syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
+      """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ]
+}, {
+  "__id__" : [ 3 ],
+  "Name" : [ "keiko" ]
+}, {
+  "__id__" : [ 2 ],
+  "Name" : [ "mikio" ]
+}, {
+  "__id__" : [ 4 ],
+  "Name" : [ "manabu" ]
+} ]"""
+
+    (syains >>> Filter(name =:= "hokari") >>>
+     NamedTuple("Name" -> name,
+                "Boss" -> (boss >>> name),
+                "Subordinates" -> (~boss >>> name)
+              )).eval().prettyJsonString ===
+                """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ],
+  "Boss" : [ ],
+  "Subordinates" : [ "mikio", "manabu" ]
+} ]"""
+
+    {syains >>> Filter(name =:= Const("hokari")) >>>
+             NamedTuple("Name" -> name,
+                        "Boss" -> (boss >>> name),
+                        "Subordinates" -> 
+                        (~boss >>> NamedTuple("Name" -> name))
+                      )
+   }.eval().prettyJsonString ===
+                        """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ],
+  "Boss" : [ ],
+  "Subordinates" : [ {
+    "__id__" : [ 2 ],
+    "Name" : [ "mikio" ]
+  }, {
+    "__id__" : [ 4 ],
+    "Name" : [ "manabu" ]
+  } ]
+} ]"""
+
 ```
