@@ -33,9 +33,9 @@ object TableHashTool {
   }
 }
 object ToDocImplicits{
-  implicit def fromSelect(x:Select):DOC = x match {
-	case Select(tree, colExps, colExps4Row, tableExps,whereCond,_) => 
-	  labeledRBracketWC("Select", 
+  implicit def fromSelectGen(x:SelectGen):DOC = x match {
+	case SelectGen(tree, colExps, colExps4Row, tableExps,whereCond,_) => 
+	  labeledRBracketWC("SelectGen", 
 						List[DOC](tree,tableExps(0).altRoot,colExps,colExps4Row))
   }
 

@@ -76,10 +76,25 @@ object ColArrow{
 	require(dom.table == cod.table)
 	new ColArrow(dom.table,dom,cod,dom.column,cod.column)
   }
-  def apply(table:Table, dom:ColObject, cod:ColObject, domcolname :String, codcolname :String):ColArrow =
+  def apply(table:Table, dom:ColObject, cod:ColObject, domcolname :String, codcolname :String):ColArrow = {
+	require(dom.table == cod.table)
 	apply(table, dom, cod, table(domcolname), table(codcolname))
+  }
 
-  def apply(dom:ColObject, cod:ColObject, domcolname :String, codcolname :String)(implicit table:Table):ColArrow = {
+  def apply(dom:ColObject, cod:ColObject, table:Table, domcolname :String, codcolname :String):ColArrow = {
+	require(dom.table == cod.table)
+	apply(table, dom, cod, table(domcolname), table(codcolname))
+  }
+
+  def apply(dom:ColObject, domcolname :String, codcolname :String):ColArrow = {
+	val table:Table = dom.table
+	val cod = dom
+  	apply(table, dom, cod, table(domcolname), table(codcolname))
+  }
+
+  def apply(dom:ColObject, cod:ColObject, domcolname :String, codcolname :String):ColArrow = {
+	require(dom.table == cod.table)
+	val table:Table = dom.table
   	apply(table, dom, cod, table(domcolname), table(codcolname))
   }
 						  

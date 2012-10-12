@@ -73,17 +73,15 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	  rootValues.flatMap(
 		getCompRows(_,ttree,table2argcol,t2c2v2r))
 	}
-	val select = Select.gen(tree,colInfo.tree_col(tree))
+	val select = SelectGen.gen(tree,colInfo.tree_col(tree))
 	val newRows = select.getRows(comprows)
 	newRows
   }
 
-  def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R ={
+  def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R =
 	tree.getAllTableExps.foldLeft(Map(): T2C2V2R)(
 	  (map : T2C2V2R, t : TableExp) =>
-	  getMapsC(t,map,rows)
-	  )
-  }
+	  getMapsC(t,map,rows))
 
   def getMapsC(node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
 	val map:Map[ColExp,Map[Value,Seq[Row]]] = maps.getOrElse(node,Map[ColExp,Map[Value,Seq[Row]]]())

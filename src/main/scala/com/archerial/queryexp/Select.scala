@@ -24,7 +24,7 @@ import com.archerial.utils.implicits._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
-case class Select(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp]){
+case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp]){
   assert(! tableExps.isEmpty, "require nonEmpty")
   assert(tree.node == tableExps.head, "hoge root")
   def rootTable:TableExp = tree.node
@@ -77,11 +77,11 @@ case class Select(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColEx
 
 }
 
-object Select {
+object SelectGen {
 
   def gen(tree:TableTree,colExps: Seq[ColExp]) = {
 	assert(colExps.nonEmpty,
-		 "Select.gen.colExps must be nonEmpty")
+		 "SelectGen.gen.colExps must be nonEmpty")
 	val tableExps:Seq[TableExp] = tree.tableExps
 	val tableExpsTail = tableExps.tail
 	val rootTableExp = tableExps.head
@@ -96,7 +96,7 @@ object Select {
 	  (colExps
 	   ++ colExps.flatMap(_.tables.map(_.pk))
 	 ).distinct.toList
-	Select(tree, 
+	SelectGen(tree, 
 		   (normalCols ++ optCols.map(_._2)),
 		   (normalCols ++ optCols.map(_._1)),
 		   tableList,whereList.map(_.cond),whereList) 

@@ -66,13 +66,9 @@ class SampleSpec extends Specification {
     val Id = ColObject(syainTable,"id")
     val Name = ColObject(syainTable,"name")
     val name = ColArrow(Id, Name)
-    val boss = ColArrow(syainTable, Id, Id, "id", "boss_id")
+    val boss = ColArrow(Id, Id, "id", "boss_id")
     val syains = AllOf(Id)
     
-    {syains >>> Filter(boss >>> name =:= "hokari") >>> name
-           }.eval().prettyJsonString ===
-             """[ "mikio", "manabu" ]"""
-
     syains.eval().prettyJsonString ===
       """[ 1, 3, 2, 4 ]"""
 
@@ -82,7 +78,6 @@ class SampleSpec extends Specification {
     {syains >>> Filter(name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
              """[ "hokari" ]"""
-
 
     {syains >>> Filter(boss >>> name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
