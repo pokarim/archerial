@@ -77,7 +77,6 @@ object ColArrow{
 	new ColArrow(dom.table,dom,cod,dom.column,cod.column)
   }
   def apply(table:Table, dom:ColObject, cod:ColObject, domcolname :String, codcolname :String):ColArrow = {
-	require(dom.table == cod.table)
 	apply(table, dom, cod, table(domcolname), table(codcolname))
   }
 

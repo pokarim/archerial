@@ -36,13 +36,19 @@ sealed trait TableExp {
   def rootCol:ColExp = argCols.head
   def filterRows(rows:Seq[Row]):Seq[Row] = rows
   final def isRoot(map:TableIdMap) = map.isRoot(this)
-  def getSQL(map: TableIdMap):String
+  def getSQL(map: TableIdMap):String = 
+	if (isRoot(map))
+	  altRoot.getSQLNonRoot(map.addKeyAlias(this,altRoot))
+	else
+	  getSQLNonRoot(map)
+	
+  
+  def getSQLNonRoot(map: TableIdMap):String
 
   def getColsRefTarget:TableExp = this
   def pk = primaryKeyCol
   def primaryKeyCol:ColNode
-  def altPrimaryKeyCol:Option[ColNode] = 
-	for (root <- altRoot) yield ColNode(root, primaryKeyCol.column)
+  def altPrimaryKeyCol:ColNode = ColNode(altRoot, primaryKeyCol.column)
   def rowMulFactor:RowMulFactor.Value
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)]
 	
@@ -54,21 +60,21 @@ sealed trait TableExp {
 	
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
 
-  def altRoot:Option[TableExp]
+  def altRoot:TableExp
   def getKeyAliases(map: TableIdMap):Option[TableExp] = 
-	if (isRoot(map)) altRoot else None
+	if (isRoot(map)) Some(altRoot) else None
 }
 
 object UnitTable extends TableExp{
   def directParent:Option[TableExp] = None
   def argCols:List[ColExp] = List(primaryKeyCol)
-  def getSQL(map: TableIdMap):String =
+  def getSQLNonRoot(map: TableIdMap):String =
 	throw new Exception("not imple")
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
 
-  def altRoot:Option[TableExp] = None
+  def altRoot:TableExp = this
   val primaryKeyCol:ColNode = ColNode(UnitTable,
 									  Column("UnitPK",ColType("UnitPK"))) 
   val UnitColExp = primaryKeyCol
@@ -81,13 +87,12 @@ case class TableNode(table: Table) extends TableExp{
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
   
-  def altRoot:Option[TableExp] = Some(this)
+  def altRoot:TableExp = this
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
 
   def primaryKeyCol:ColNode = ColNode(this,table.primaryKey)
-  override def toString:String = "TabNode(%s)" format(table.name)
 
-  def getSQL(map: TableIdMap):String = 
+  def getSQLNonRoot(map: TableIdMap):String = 
 	"%s as %s" format(table.name, map(this))
 }
 
@@ -100,16 +105,16 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] =
 	if (isRoot)
-	  List((tableNode.primaryKeyCol, altPrimaryKeyCol.get))
+	  List((tableNode.primaryKeyCol, altPrimaryKeyCol))
 	else
-	  List((tableNode.primaryKeyCol, altPrimaryKeyCol.get))
+	  List((tableNode.primaryKeyCol, altPrimaryKeyCol))
 
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
   = {
 	  List(OpExps.=:=(
 		ConstantExp(row.get.get(tableNode.primaryKeyCol).get match {
 					  case Val(rawval,_) => rawval}), 
-		Col(altPrimaryKeyCol.get)))}
+		Col(altPrimaryKeyCol)))}
 
   override def filterRows(rows:Seq[Row]):Seq[Row] = 
 	rows.filter{(row)=>{
@@ -118,15 +123,12 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 		  case Val(RawVal.Bool(true),_) => true
 		  case _ => false}}}
 
-  def altRoot:Option[TableExp] = getColsRefTarget.altRoot
+  def altRoot:TableExp = getColsRefTarget.altRoot
 
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.LtOne
 
   override def getColsRefTarget:TableExp = tableNode.getColsRefTarget
-  def getSQL(map: TableIdMap):String = {
-	if (isRoot(map))
-	  altRoot.get.getSQL(map.addKeyAlias(this,altRoot.get))
-	else
+  def getSQLNonRoot(map: TableIdMap):String = {
 	  throw new Exception("hogehoge")
   }
 }
@@ -145,18 +147,15 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
 	else RowMulFactor.Many
   def rightcol = ColNode(this, rightcolumn)
 
-  def getSQL(map: TableIdMap):String =
-	if (isRoot(map))
-	  altRoot.get.getSQL(map.addKeyAlias(this,altRoot.get))
-	else{
-	  val l = leftcol.getSQL(map)
-	  val r = rightcol.getSQL(map)
-	  "left join %s as %s on %s = %s" format(
-	  	right.name, map(this), l,r)}
+  def getSQLNonRoot(map: TableIdMap):String ={
+	val l = leftcol.getSQL(map)
+	val r = rightcol.getSQL(map)
+	"left join %s as %s on %s = %s" format(
+	  right.name, map(this), l,r)}
 
-  def altRoot = Some(TableNode(right))
+  def altRoot = TableNode(right)
   def primaryKeyCol:ColNode = ColNode(this,right.primaryKey)
-  def altLeftColNode = ColNode(altRoot.get,rightcolumn)
+  def altLeftColNode = ColNode(altRoot,rightcolumn)
   override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
 	{
 	  val Val(rawval,_) = row.get.getDirectValue(leftcol.colNode)
@@ -165,8 +164,6 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
 					))
 	}
   def left:TableExp = leftcol.table
-  override def toString:String = 
-    "%s.%s=%s.%s" format(left, leftcol.toShortString, right.name, rightcolumn.name)
 
 }
 

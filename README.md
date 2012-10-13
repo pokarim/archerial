@@ -1,6 +1,8 @@
 Archerial
 ---------
 *Binary relational-relational mapping DSL for accesing databases in Scala.*
+## 注意
+本ツールはまだプロトタイプレベルであり、特にSQLインジェクション対策が未実装ですのでご注意下さい。
 
 ### 簡単な紹介
 #### それは何ですか
