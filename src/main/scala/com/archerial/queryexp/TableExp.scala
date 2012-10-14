@@ -17,6 +17,8 @@
 package com.archerial.queryexp
 import com.archerial._
 
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
 
 sealed trait Quantity
 object Many extends Quantity
@@ -41,7 +43,6 @@ sealed trait TableExp {
 	  altRoot.getSQLNonRoot(map.addKeyAlias(this,altRoot))
 	else
 	  getSQLNonRoot(map)
-	
   
   def getSQLNonRoot(map: TableIdMap):String
 
@@ -112,16 +113,16 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
   = {
 	  List(OpExps.=:=(
-		ConstantExp(row.get.get(tableNode.primaryKeyCol).get match {
+		ConstantExp(row.get.d(tableNode.primaryKeyCol) match {
 					  case Val(rawval,_) => rawval}), 
 		Col(altPrimaryKeyCol)))}
 
   override def filterRows(rows:Seq[Row]):Seq[Row] = 
 	rows.filter{(row)=>{
-	  val result = List(cond.row2value(row))
-		result.length > 0 && result.forall{
-		  case Val(RawVal.Bool(true),_) => true
-		  case _ => false}}}
+	  cond.row2value(row) match{
+		  case Val(RawVal.Bool(true),_) 
+		if row.d(tableNode.primaryKeyCol).nonNull => true
+		  case _ => false }}}
 
   def altRoot:TableExp = getColsRefTarget.altRoot
 
@@ -134,6 +135,9 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 }
 
 case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableExp{
+  override def filterRows(rows:Seq[Row]):Seq[Row] = 
+	rows.filter{_.d(leftcol.colNode).nonNull}
+
   def directParent:Option[TableExp] = Some(leftcol.table)
   def argCols:List[ColExp] = List(leftcol.colNode)
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] =
@@ -158,7 +162,7 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
   def altLeftColNode = ColNode(altRoot,rightcolumn)
   override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
 	{
-	  val Val(rawval,_) = row.get.getDirectValue(leftcol.colNode)
+	  val Val(rawval,_) = row.get.d(leftcol.colNode)
 	  List(OpExps.=:=(ConstantExp(rawval), 
 					Col(altLeftColNode)
 					))
