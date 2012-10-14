@@ -25,17 +25,17 @@ trait AbstractArrow {
   this:Arrow => ;
   
   def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
-	valueExp.eval(sp)
+	queryExp.eval(sp)
   }
   def dummy = "abc"
   def dom:Object
   def cod:Object
   def unary_~ : Arrow
 
-  def valueExp():QueryExp = {
+  def queryExp():QueryExp = {
 	require(
 	  this.dom == UnitObject,
-	  "valueExp() needs this.dom == UnitObject but %s.dom is %s"
+	  "queryExp() needs this.dom == UnitObject but %s.dom is %s"
 	  format(this,this.dom))
 	apply((UnitObject,UnitCol))._2
   }

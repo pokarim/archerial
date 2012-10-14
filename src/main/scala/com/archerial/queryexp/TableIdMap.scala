@@ -16,19 +16,24 @@
 
 package com.archerial.queryexp
 
-import scala.collection.immutable
+import scala.collection.immutable.Map
 import com.archerial._
 import com.archerial.utils.implicits._
 
-case class TableIdMap(root:TableExp, _map: immutable.Map[TableExp,String]) {
+case class TableIdMap(root:TableExp, map: Map[TableExp,String], constMap: Map[ConstantQueryExp,String]) {
   def contains(x:TableExp) = !gets(x).isEmpty
   def addKeyAlias(from:TableExp,to:TableExp) = 
-	copy(_map=_map.updated(to, _map(from) ))
+	copy(map=map.updated(to, map(from) ))
   def apply(x:TableExp):String = gets(x).get
   def gets(x:TableExp):Option[String] = 
-  	_map.get(x)
+  	map.get(x)
 
   def isRoot(t:TableExp) = t == root
+  def addConstId(consts:Seq[ConstantQueryExp]) = {
+	val m = {for {(k,v) <- consts.zipWithIndex}
+	yield (k,TableIdMap.id2alias(v).toLowerCase)}.toMap
+	copy(constMap=m)
+  }
 }
 object TableIdMap{
   def id2alias(id:Int) = 
@@ -38,7 +43,8 @@ object TableIdMap{
   def genTableIdMap(tableList:List[TableExp]):TableIdMap = {
   	val seq = (for ((k,v) <- tableList.zipWithIndex)
   			   yield (k,id2alias(v))).toMap
-  	TableIdMap(tableList.head, seq)
+	val constMmap = Map[ConstantQueryExp,String]()
+  	new TableIdMap(tableList.head, seq,constMmap)
   }
 
 }

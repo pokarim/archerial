@@ -76,14 +76,21 @@ object OpExps {
 	def SQLOpString:String = "AND"
   }
 }
-case class ConstantExp(x:RawVal) extends QueryExp {
+trait ConstantQueryExp extends QueryExp {
+  def rawVal:RawVal
+  def getSQL(map:TableIdMap):String = {
+	if (map.constMap.contains(this))
+	  "{%s}" format(map.constMap(this))
+	else
+	  rawVal.toSQLString
+  }
+}
+case class ConstantExp(rawVal:RawVal) extends ConstantQueryExp {
   def getDependentCol():Stream[ColExp] = Stream.Empty
-  def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = List(Val(x,1))
+  def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = List(Val(rawVal,1))
 
   override def row2value(row:Row ): Value =
-	Val(x,1)
-
-  def getSQL(map: TableIdMap):String = 	x.toSQLString
+	Val(rawVal,1)
 }
 object Col{
   def apply(table: TableExp, column: Column) = 
@@ -92,14 +99,14 @@ object Col{
 
 object UnitCol extends Col(UnitTable.pk)
 
-case class ConstCol(constColExp:ConstantColExp) extends QueryExp{
+case class ConstCol(constColExp:ConstantColExp) extends ConstantQueryExp{
+  def rawVal:RawVal = constColExp.value
+
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter) = 
   ColEvalTool.eval(
 	constColExp, constColExp.table, vcol, values, getter)
 
   def value = Val(constColExp.value,1)
-  def getSQL(map:TableIdMap):String = 
-	constColExp.getSQL(map)
   def getDependentCol():Stream[ColExp] = 
 	Stream.Empty 
   def row2value(row:Row ): Value = value

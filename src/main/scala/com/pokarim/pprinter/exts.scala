@@ -35,13 +35,18 @@ object TableHashTool {
 object ToDocImplicits{
   implicit def fromSelectGen(x:SelectGen):DOC = x match {
 	case SelectGen(tree, colExps, colExps4Row, tableExps,whereCond,_) => 
-	  labeledRBracketWC("SelectGen", 
-						List[DOC](tree,tableExps(0).altRoot,colExps,colExps4Row))
+	  labeledRBracketWC(
+		"SelectGen",
+		List[DOC](tree,tableExps(0).altRoot,colExps,colExps4Row))
   }
 
-
-
   implicit def fromQueryExp(x:QueryExp):DOC = x match {
+	case ConstantExp(rawVal) => 
+	  	  labeledRBracketWC("NamedTupleQExp", List[DOC](rawVal))
+	case c: ConstCol => 
+	  	  labeledRBracketWC("ConstCol", List[DOC](
+			hashCodeStr(c.constColExp.table),
+			c.rawVal))
 	case NTuple(exps) =>
 	  labeledRBracketWC("NTuple", exps.map(x => x:DOC))
 	case NamedTupleQExp(keycol,exps) =>
@@ -123,7 +128,7 @@ object FromColExp{
 
 object FromTableIdMap{
   implicit def toDOC(x:TableIdMap) =
-	labeledRBracketWC("TableIdMap",List[DOC](x._map))
+	labeledRBracketWC("TableIdMap",List[DOC](x.map))
 }
 
 object FromRow{

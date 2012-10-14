@@ -43,34 +43,43 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 	  case (map,(t,alias)) => map.addKeyAlias(t,alias)}
   assert(tableIdMap.root == rootTable, "hoge root")
 
-  def getSQL(row:Option[Row]):String = {
-	val tableClauses = tableExps.map{_ getSQL(tableIdMap)}
-	val colClauses = colExps.map{_ getSQL(tableIdMap)}
+  def getConsts(exps:Seq[QueryExp]):Seq[ConstantQueryExp] =
+	  exps.filter(_.isInstanceOf[ConstantQueryExp]).map(
+		_.asInstanceOf[ConstantQueryExp])
+
+  def getSQL(row:Option[Row]):(String,Seq[(String,RawVal)])= {
 	val opWhereCondss = 
 	  tableExps.map(_.getOptionalWhereConds(tableIdMap,row))
 	val _whereConds = whereConds ++ opWhereCondss.flatten
-	val wcs = _whereConds.map{_.getSQL(tableIdMapWithAlias)} 
+	val ps = getConsts(QueryExpTools.getParameterExps(Left(_whereConds)))
+	val idMap:TableIdMap = tableIdMap.addConstId(ps)
+	val idMapWithAlias:TableIdMap = tableIdMapWithAlias.addConstId(ps)
+	val tableClauses = tableExps.map{_ getSQL(idMap)}
+	val colClauses = colExps.map{_ getSQL(idMap)}
+	val wcs = _whereConds.map{_.getSQL(idMapWithAlias)} 
 	val cs = colClauses.joinWith(", ")
 	val ts = tableClauses.joinWith(" ")
-	val ws = if (wcs.isEmpty) "" else " where %s" format(
-	  wcs.joinWith(" and "))
+	val ws = if (wcs.isEmpty) "" 
+			 else " where %s" format(wcs.joinWith(" and "))
 	
 	val sql = "select %s from %s%s;" format(cs,ts,ws)
-	sql
+	(sql,ps.map((x) => idMap.constMap(x) -> x.rawVal))
   }
 
   def getRows(rows:Seq[Row])(implicit con: java.sql.Connection):Seq[Row] = {
 	val rows2 = rootTable.filterRows(rows)
    	val newRows = 
 	  for {row <- rows2
-		   val sql = getSQL(Some(row)) : String
-		   dataStream  <- getdata(sql)}
+		   val (sql,ps) = getSQL(Some(row))
+		   dataStream  <- getdata(sql,ps)}
    	  yield Row.gen(colExps4Row,dataStream)
 	newRows
    }
 
-  def getdata(sql:String)(implicit con:java.sql.Connection):Stream[List[Any]] = {
-	  for (row <- SQL(sql)())
+  def getdata(sql:String,ps:Seq[(String,RawVal)])(implicit con:java.sql.Connection):Stream[List[Any]] = {
+	  for (row <- SQL(sql).on(
+		ps.map{case (s,r) =>
+		  (s, r.toParameterValue)} :_*)())
 	  yield row.data
   }
 

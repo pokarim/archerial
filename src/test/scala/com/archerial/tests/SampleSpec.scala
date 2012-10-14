@@ -69,6 +69,10 @@ class SampleSpec extends Specification {
     val boss = ColArrow(Id, Id, "id", "boss_id")
     val syains = AllOf(Id)
     
+    val exp = (syains >>> Filter(boss >>> name =:= "hokari") >>> name).queryExp
+    pprn(exp)
+    pprn(QueryExpTools.getQueryExps(Left(exp)))
+    //exp.eval()
     syains.eval().prettyJsonString ===
       """[ 1, 3, 2, 4 ]"""
 

@@ -48,13 +48,13 @@ class ArrowSpec extends Specification {
 	val isHokari = name =:= Const(Str("hokari"))
 	
 	"simple arrow" in {
-	  (syains >>> name).valueExp.eval().toSet ===
+	  (syains >>> name).queryExp.eval().toSet ===
 		Set[Value](Str("hokari"),
 				   Str("keiko"),
 				   Str("mikio"))
 	}
 	"simple tuple" in {
-	  (syains >>> Tuple(syainId, name)).valueExp.eval().toSet === 
+	  (syains >>> Tuple(syainId, name)).queryExp.eval().toSet === 
 		Set(
 		  VTuple(VList(Int(1)),
 				 VList(Str("hokari"))),
@@ -67,7 +67,7 @@ class ArrowSpec extends Specification {
 	
 	  (syains >>> Filter(isMikio) >>> Tuple(
 		syainId
-		,name)).valueExp.eval().toSet === 
+		,name)).queryExp.eval().toSet === 
 		  Set(
 			VTuple(VList(Int(2)),
 				   VList(Str("mikio"))))
@@ -75,7 +75,7 @@ class ArrowSpec extends Specification {
 	"filter arrow" in {
 	  ((syains >>> Filter(isHokari) >>> 
 		 Tuple(syainId ,name,subname)
-	   ).valueExp.eval().toSet) === 
+	   ).queryExp.eval().toSet) === 
 	  Set(
 	   VTuple(VList(Int(1)),
 			  VList(Str("hokari")),
@@ -89,14 +89,14 @@ class ArrowSpec extends Specification {
 		,name
 		,bossname
 		,subname
-	  )).valueExp.eval().toSet)
+	  )).queryExp.eval().toSet)
 	  
 	  (syains >>> Tuple(
 		syainId
 		,name
 		,boss >>> name
 		,boss >>> Filter(boss >>> name =:= name) >>> name
-	  )).valueExp.eval().toSet === Set(
+	  )).queryExp.eval().toSet === Set(
 		VTuple(VList(Int(1)),
 			   VList(Str("hokari")),
 			   VList(Str("hokari")),

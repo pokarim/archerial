@@ -19,6 +19,13 @@ import scala.collection.immutable
 import com.archerial._
 
 object QueryExpTools{
+  def isConst:QueryExp =>Boolean = _.isInstanceOf[ConstantQueryExp]
+  def getParameterExps(xs:Either[Seq[QueryExp],Seq[TableExp]] )=
+	getContainExps(xs).filter(_.isInstanceOf[ConstantQueryExp]).distinct
+
+  def getContainExps:Either[Seq[QueryExp],Seq[TableExp]] => Seq[QueryExp] = 
+	{case Left(qs) => qs.flatMap((x)=>getQueryExps(Left(x)))
+	 case Right(ts) => ts.flatMap((x)=>getQueryExps(Right(x)))}
   def getQueryExps(self:Either[QueryExp,TableExp]):List[QueryExp] = 
 	self.fold(List(_),(_)=>Nil) ++
   directParents(self).flatMap(getQueryExps)
