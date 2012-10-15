@@ -8,7 +8,6 @@ Archerial
 Archerial は、RDBMS と仮想的なBinary relational DBをマッピングするツールです。
 Object-relational mapperならぬ、Binary relational-relational mapperです。
 DSLによるクエリー記述に基づいてSQLクエリーを発行しデータを取得・加工します。
-（まだSQLインジェクション対策などないので、*万が一*使用の際は注意して下さい。）
 
 #### Binary relational DBって何ですか
 Binary relational DBとは、
