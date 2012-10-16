@@ -54,9 +54,9 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 	val ps = getConsts(QueryExpTools.getParameterExps(Left(_whereConds)))
 	val idMap:TableIdMap = tableIdMap.addConstId(ps)
 	val idMapWithAlias:TableIdMap = tableIdMapWithAlias.addConstId(ps)
-	val tableClauses = tableExps.map{_ getSQL(idMap, None)}
+	val tableClauses = tableExps.map{_ getSQL(idMap)}
 	val colClauses = colExps.map{_ getSQL(idMap)}
-	val wcs = _whereConds.map{_.getSQL(idMapWithAlias, None)} 
+	val wcs = _whereConds.map{_.getSQL(idMapWithAlias)} 
 	val cs = colClauses.joinWith(", ")
 	val ts = tableClauses.joinWith(" ")
 	val ws = if (wcs.isEmpty) "" 

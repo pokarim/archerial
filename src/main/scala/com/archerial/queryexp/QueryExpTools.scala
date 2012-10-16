@@ -68,7 +68,7 @@ trait TupleExpBase {
   def row2value(row:Row ): Value =
 	 throw new Exception("hoge")
 
-  def getSQL(map: TableIdMap,row:Option[Row]):String = {
+  def getSQL(map: TableIdMap):String = {
 	throw new Exception("invalid operation")
   }
 
