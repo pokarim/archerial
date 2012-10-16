@@ -80,15 +80,7 @@ trait AbstractArrow {
 	case (pred  , Any(cond)) => {
 	  val (obj:ColObject, pcol@Col(ColNode(cTable, cCol))) = pred
 	  val (_,condExp : OpExps.=:=) = cond(pred)
-	  (obj,Exists(cTable,
-		ConstCol(ConstantColExp(
-		  WhereNode(cTable, condExp),
-		  RawVal.Int(1)
-		))))
-	  //(obj,Col(WhereNode(cTable, AnyQExp(condExp)), obj.column ))
-	  // (obj,
-	  //  AnyQExp(condExp))
-	   //Col(WhereNode(cTable, condExp), obj.column ))
+	  (obj,Exists(cTable,condExp))
 	}
 
 

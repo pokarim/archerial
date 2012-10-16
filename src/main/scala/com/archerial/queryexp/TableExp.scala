@@ -40,7 +40,8 @@ sealed trait TableExp {
   final def isRoot(map:TableIdMap) = map.isRoot(this)
   def getSQL(map: TableIdMap):String = 
 	if (isRoot(map))
-	  altRoot.getSQLNonRoot(map.addKeyAlias(this,altRoot))
+	  "%s as %s" format(altRoot.name, map(this))
+	  //altRoot.getSQLNonRoot(map.addKeyAlias(this,altRoot))
 	else
 	  getSQLNonRoot(map)
   
@@ -49,7 +50,9 @@ sealed trait TableExp {
   def getColsRefTarget:TableExp = this
   def pk = primaryKeyCol
   def primaryKeyCol:ColNode
-  def altPrimaryKeyCol:ColNode = ColNode(altRoot, primaryKeyCol.column)
+  def altPrimaryKeyCol:ColNode = 
+	ColNode(this, primaryKeyCol.column)
+	// ColNode(altRoot, primaryKeyCol.column)
   def rowMulFactor:RowMulFactor.Value
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)]
 	
@@ -61,9 +64,10 @@ sealed trait TableExp {
 	
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
 
-  def altRoot:TableExp
+  def altRoot:Table
   def getKeyAliases(map: TableIdMap):Option[TableExp] = 
-	if (isRoot(map)) Some(altRoot) else None
+	None
+	//if (isRoot(map)) Some(altRoot) else None
 }
 
 object UnitTable extends TableExp{
@@ -75,7 +79,7 @@ object UnitTable extends TableExp{
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
 
-  def altRoot:TableExp = this
+  def altRoot:Table = throw new Exception("")
   val primaryKeyCol:ColNode = ColNode(UnitTable,
 									  Column("UnitPK",ColType("UnitPK"))) 
   val UnitColExp = primaryKeyCol
@@ -88,7 +92,7 @@ case class TableNode(table: Table) extends TableExp{
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
   
-  def altRoot:TableExp = this
+  def altRoot:Table = table
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
 
   def primaryKeyCol:ColNode = ColNode(this,table.primaryKey)
@@ -124,7 +128,7 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 		if row.d(tableNode.primaryKeyCol).nonNull => true
 		  case _ => false }}}
 
-  def altRoot:TableExp = getColsRefTarget.altRoot
+  def altRoot:Table = getColsRefTarget.altRoot
 
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.LtOne
 
@@ -157,9 +161,10 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
 	"left join %s as %s on %s = %s" format(
 	  right.name, map(this), l,r)}
 
-  def altRoot = TableNode(right)
+  def altRoot = right//TableNode(right)
   def primaryKeyCol:ColNode = ColNode(this,right.primaryKey)
-  def altLeftColNode = ColNode(altRoot,rightcolumn)
+  def altLeftColNode = ColNode(this,rightcolumn)
+  //def altLeftColNode = ColNode(altRoot,rightcolumn)
   override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
 	{
 	  if (row.filter(_.contains(leftcol.colNode)).nonEmpty){

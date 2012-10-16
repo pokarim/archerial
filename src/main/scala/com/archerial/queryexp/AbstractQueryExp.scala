@@ -60,8 +60,11 @@ trait AbstractQueryExp extends AbstractQueryExp4Tree{
 	  getter)
 	vs
   }
+  def constants:Seq[ConstantQueryExp] = Nil
+
   def row2value(row:Row ): Value
   def getSQL(map: TableIdMap):String
+
   def toShortString:String = toString
 
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value]

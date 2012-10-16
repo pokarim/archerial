@@ -42,8 +42,8 @@ object ToDocImplicits{
 
   implicit def fromQueryExp(x:QueryExp):DOC = x match {
 
-	case Exists(ctable,col) =>
-	  	  labeledRBracketWC("Exists", List[DOC](ctable,col))
+	case Exists(ctable,cond) =>
+	  	  labeledRBracketWC("Exists", List[DOC](ctable,cond))
 	// case AnyQExp(cond) =>
 	//   labeledRBracketWC("AnyQExp", List[DOC](cond))
 	  

@@ -78,6 +78,10 @@ object OpExps {
 }
 trait ConstantQueryExp extends QueryExp {
   def rawVal:RawVal
+  override def constants:Seq[ConstantQueryExp] = List(this)
+  // def getSQLandParmas(map: TableIdMap):(String,Seq[(String,RawVal)]) =
+  // 	(getSQL(map),List( -> rawVal))
+
   def getSQL(map:TableIdMap):String = {
 	if (map.constMap.contains(this))
 	  "{%s}" format(map.constMap(this))
@@ -187,29 +191,29 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
 }
 
 case class AnyQExp(cond :QueryExp) extends QueryExp{
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = Nil
+  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = Nil
 
   def getDependentCol():Stream[ColExp] = 
 	cond.getDependentCol()
 
   def getSQL(map: TableIdMap):String =	{
-	val any = this
-	val colInfo = TreeColInfo(
-	  any.cond.col2table,
-	  SimpleGenTrees.gen(any.cond))
-	//val select = SelectGen.gen(tree,colInfo.tree_col(tree))
-	//val newRows = select.getRows(comprows)
-
-	println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 	"exists %s"
   }
-	//"%s.%s" format(map.gets(table).get, column.name)
-  def row2value(row:Row ): Value = throw new Exception("AnyQExprow2value")
 
+  def row2value(row:Row ): Value = throw new Exception("AnyQExprow2value")
 }
 
-case class Exists(root:TableExp,col :ConstCol) extends QueryExp{
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = Nil
+//case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
+case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
+  val col :ConstCol = 
+		 ConstCol(ConstantColExp(
+		   WhereNode(root, cond),
+		   RawVal.Int(1)))
+
+  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = Nil
+
+  override def constants:Seq[ConstantQueryExp] = 
+	QueryExpTools.getConsts(Left(List(cond)))
 
   def getDependentCol():Stream[ColExp] = 
 	col.getDependentCol()
@@ -218,23 +222,17 @@ case class Exists(root:TableExp,col :ConstCol) extends QueryExp{
   def getSQL(map: TableIdMap):String =	{
 	val any = this
 	val exp = col
-	val trees = SimpleGenTrees.oneTree(exp,root).children
+	val trees = SimpleGenTrees.oneTree(exp, root).children
 	require(trees.length==1) // TODO cross join
 	val tree = trees.head
-
 	val colList = List(col.colList.head)
-	val col2table = 
-	  Rel.gen(colList)((x:ColNode) => List(x.table))
-	val colInfo = TreeColInfo(
-	  col2table,
-		trees)
-	val select = SelectGen.gen(tree,colInfo.tree_col(tree),
-							 Some(map))
-
+	val col2table = Rel.gen(colList)((x:ColNode) => List(x.table))
+	val colInfo = TreeColInfo(col2table, trees)
+	val select = SelectGen.gen(tree,colInfo.tree_col(tree), Some(map))
 	val sql = select.getSQL(None)
-	"exists %s" format sql
+	"exists (%s)" format sql._1
   }
 
-  def row2value(row:Row ): Value = throw new Exception("AnyQExprow2value")
-
+  def row2value(row:Row ): Value = 
+	throw new Exception("Exists.row2value is Not Implemented")
 }

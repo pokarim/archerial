@@ -24,22 +24,24 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 
 case class TableIdMap(roots:Set[TableExp], map: Map[TableExp,String], constMap: Map[ConstantQueryExp,String]) {
   def contains(x:TableExp) = !gets(x).isEmpty
-  def addKeyAlias(from:TableExp,to:TableExp) = 
+  def addKeyAlias(from:TableExp,to:TableExp) = {
 	copy(map=map.updated(to, map(from) ))
+  }
   def apply(x:TableExp):String = gets(x).get
   def gets(x:TableExp):Option[String] = 
   	map.get(x)
 
   def isRoot(t:TableExp):Boolean = roots(t)
   def addConstId(consts:Seq[ConstantQueryExp]) = {
-	val m = {for {(k,v) <- consts.zipWithIndex}
-	yield (k,TableIdMap.id2alias(v).toLowerCase)}.toMap
-	copy(constMap=m)
+	val startId = map.toSeq.length
+	val m = {for {(k,v) <- consts.filter(!constMap.contains(_)).zipWithIndex}
+	yield (k,TableIdMap.id2alias(v + startId).toLowerCase)}.toMap
+	copy(constMap=constMap ++ m)
   }
 
   def appendTableExps(tableList:Seq[TableExp]):TableIdMap = {
 	val startId = map.toSeq.length
-  	val seq = (for ((k,v) <- tableList.zipWithIndex)
+  	val seq = (for ((k,v) <- tableList.filter(!map.contains(_)).zipWithIndex)
   			   yield (k, TableIdMap.id2alias(v + startId))).toMap
 	copy(roots= roots + tableList.head , map=map ++ seq)
   }

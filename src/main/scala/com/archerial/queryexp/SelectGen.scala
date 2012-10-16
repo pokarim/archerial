@@ -29,7 +29,7 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
   assert(tree.node == tableExps.head, "hoge root")
   def rootTable:TableExp = tree.node
   lazy val _tableIdMap = TableIdMap.genTableIdMap(tableExps,outerTableIdMap)
-  //assert(_tableIdMap.root == rootTable,"_tableIdMap.root == rootTable")
+
   val table_alias = 
 	for {t <- tableExps
 		 alias <- t.getColsRefTarget :: t.getKeyAliases(_tableIdMap).toList
@@ -40,18 +40,20 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 		 if t != alias} yield (alias,t);
   lazy val tableIdMap, tableIdMapWithAlias = 
 	(table_alias ++ alias_table).foldLeft(_tableIdMap){
-	  case (map,(t,alias)) => map.addKeyAlias(t,alias)}
-  //assert(tableIdMap.root == rootTable, "hoge root")
-
-  def getConsts(exps:Seq[QueryExp]):Seq[ConstantQueryExp] =
-	  exps.filter(_.isInstanceOf[ConstantQueryExp]).map(
-		_.asInstanceOf[ConstantQueryExp])
+	  case (map,(t,alias)) 
+	  => //map.addKeyAlias(t,alias)
+		{
+		if (outerTableIdMap.nonEmpty &&
+			outerTableIdMap.get.map.contains(alias)) map
+		else map.addKeyAlias(t,alias)
+	}
+	}
 
   def getSQL(row:Option[Row]):(String,Seq[(String,RawVal)])= {
 	val opWhereCondss = 
 	  tableExps.map(_.getOptionalWhereConds(tableIdMap,row))
 	val _whereConds = whereConds ++ opWhereCondss.flatten
-	val ps = getConsts(QueryExpTools.getParameterExps(Left(_whereConds)))
+	val ps = QueryExpTools.getConsts(Left(_whereConds))
 	val idMap:TableIdMap = tableIdMap.addConstId(ps)
 	val idMapWithAlias:TableIdMap = tableIdMapWithAlias.addConstId(ps)
 	val tableClauses = tableExps.map{_ getSQL(idMap)}
@@ -62,7 +64,7 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 	val ws = if (wcs.isEmpty) "" 
 			 else " where %s" format(wcs.joinWith(" and "))
 	
-	val sql = "select %s from %s%s;" format(cs,ts,ws)
+	val sql = "select %s from %s%s" format(cs,ts,ws)
 	(sql,ps.map((x) => idMap.constMap(x) -> x.rawVal))
   }
 
@@ -71,16 +73,16 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
    	val newRows = 
 	  for {row <- rows2
 		   val (sql,ps) = getSQL(Some(row))
-		   dataStream  <- getdata(sql,ps)}
-   	  yield Row.gen(colExps4Row,dataStream)
+		   dataStream <- getdata(sql,ps)}
+   	  yield Row.gen(colExps4Row, dataStream)
 	newRows
    }
 
   def getdata(sql:String,ps:Seq[(String,RawVal)])(implicit con:java.sql.Connection):Stream[List[Any]] = {
-	  for (row <- SQL(sql).on(
-		ps.map{case (s,r) =>
-		  (s, r.toParameterValue)} :_*)())
-	  yield row.data
+	val values = ps.distinct.map{case (s, r) =>
+		  (s, r.toParameterValue)}
+	for (row <- SQL(sql+";").on(values:_*)())
+	yield row.data
   }
 
 }
