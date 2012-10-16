@@ -24,12 +24,12 @@ import com.archerial.utils.implicits._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
-case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp]){
+case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp], outerTableIdMap:Option[TableIdMap]){
   assert(! tableExps.isEmpty, "require nonEmpty")
   assert(tree.node == tableExps.head, "hoge root")
   def rootTable:TableExp = tree.node
-  lazy val _tableIdMap = TableIdMap.genTableIdMap(tableExps)
-  assert(_tableIdMap.root == rootTable,"_tableIdMap.root == rootTable")
+  lazy val _tableIdMap = TableIdMap.genTableIdMap(tableExps,outerTableIdMap)
+  //assert(_tableIdMap.root == rootTable,"_tableIdMap.root == rootTable")
   val table_alias = 
 	for {t <- tableExps
 		 alias <- t.getColsRefTarget :: t.getKeyAliases(_tableIdMap).toList
@@ -41,7 +41,7 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
   lazy val tableIdMap, tableIdMapWithAlias = 
 	(table_alias ++ alias_table).foldLeft(_tableIdMap){
 	  case (map,(t,alias)) => map.addKeyAlias(t,alias)}
-  assert(tableIdMap.root == rootTable, "hoge root")
+  //assert(tableIdMap.root == rootTable, "hoge root")
 
   def getConsts(exps:Seq[QueryExp]):Seq[ConstantQueryExp] =
 	  exps.filter(_.isInstanceOf[ConstantQueryExp]).map(
@@ -54,9 +54,9 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 	val ps = getConsts(QueryExpTools.getParameterExps(Left(_whereConds)))
 	val idMap:TableIdMap = tableIdMap.addConstId(ps)
 	val idMapWithAlias:TableIdMap = tableIdMapWithAlias.addConstId(ps)
-	val tableClauses = tableExps.map{_ getSQL(idMap)}
+	val tableClauses = tableExps.map{_ getSQL(idMap, None)}
 	val colClauses = colExps.map{_ getSQL(idMap)}
-	val wcs = _whereConds.map{_.getSQL(idMapWithAlias)} 
+	val wcs = _whereConds.map{_.getSQL(idMapWithAlias, None)} 
 	val cs = colClauses.joinWith(", ")
 	val ts = tableClauses.joinWith(" ")
 	val ws = if (wcs.isEmpty) "" 
@@ -87,7 +87,7 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 
 object SelectGen {
 
-  def gen(tree:TableTree,colExps: Seq[ColExp]) = {
+  def gen(tree:TableTree,colExps: Seq[ColExp], outerTableIdMap:Option[TableIdMap]=None) = {
 	assert(colExps.nonEmpty,
 		 "SelectGen.gen.colExps must be nonEmpty")
 	val tableExps:Seq[TableExp] = tree.tableExps
@@ -107,7 +107,7 @@ object SelectGen {
 	SelectGen(tree, 
 		   (normalCols ++ optCols.map(_._2)),
 		   (normalCols ++ optCols.map(_._1)),
-		   tableList,whereList.map(_.cond),whereList) 
+		   tableList,whereList.map(_.cond),whereList,outerTableIdMap) 
   }
 	
 }

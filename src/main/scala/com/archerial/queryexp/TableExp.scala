@@ -38,13 +38,13 @@ sealed trait TableExp {
   def rootCol:ColExp = argCols.head
   def filterRows(rows:Seq[Row]):Seq[Row] = rows
   final def isRoot(map:TableIdMap) = map.isRoot(this)
-  def getSQL(map: TableIdMap):String = 
+  def getSQL(map: TableIdMap,row:Option[Row]):String = 
 	if (isRoot(map))
-	  altRoot.getSQLNonRoot(map.addKeyAlias(this,altRoot))
+	  altRoot.getSQLNonRoot(map.addKeyAlias(this,altRoot),row)
 	else
-	  getSQLNonRoot(map)
+	  getSQLNonRoot(map,row)
   
-  def getSQLNonRoot(map: TableIdMap):String
+  def getSQLNonRoot(map: TableIdMap,row:Option[Row]):String
 
   def getColsRefTarget:TableExp = this
   def pk = primaryKeyCol
@@ -69,7 +69,7 @@ sealed trait TableExp {
 object UnitTable extends TableExp{
   def directParent:Option[TableExp] = None
   def argCols:List[ColExp] = List(primaryKeyCol)
-  def getSQLNonRoot(map: TableIdMap):String =
+  def getSQLNonRoot(map: TableIdMap,row:Option[Row]):String =
 	throw new Exception("not imple")
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
@@ -93,7 +93,7 @@ case class TableNode(table: Table) extends TableExp{
 
   def primaryKeyCol:ColNode = ColNode(this,table.primaryKey)
 
-  def getSQLNonRoot(map: TableIdMap):String = 
+  def getSQLNonRoot(map: TableIdMap,row:Option[Row]):String = 
 	"%s as %s" format(table.name, map(this))
 }
 
@@ -129,7 +129,7 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.LtOne
 
   override def getColsRefTarget:TableExp = tableNode.getColsRefTarget
-  def getSQLNonRoot(map: TableIdMap):String = {
+  def getSQLNonRoot(map: TableIdMap,row:Option[Row]):String = {
 	  throw new Exception("hogehoge")
   }
 }
@@ -151,8 +151,8 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
 	else RowMulFactor.Many
   def rightcol = ColNode(this, rightcolumn)
 
-  def getSQLNonRoot(map: TableIdMap):String ={
-	val l = leftcol.getSQL(map)
+  def getSQLNonRoot(map: TableIdMap,row:Option[Row]):String ={
+	val l = leftcol.getSQL(map,row)//TODO none
 	val r = rightcol.getSQL(map)
 	"left join %s as %s on %s = %s" format(
 	  right.name, map(this), l,r)}
@@ -162,10 +162,17 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
   def altLeftColNode = ColNode(altRoot,rightcolumn)
   override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
 	{
+	  if (row.filter(_.contains(leftcol.colNode)).nonEmpty){
 	  val Val(rawval,_) = row.get.d(leftcol.colNode)
 	  List(OpExps.=:=(ConstantExp(rawval), 
 					Col(altLeftColNode)
 					))
+	  }else{
+	  List(OpExps.=:=(leftcol, 
+					Col(altLeftColNode)
+					))
+		
+	  }
 	}
   def left:TableExp = leftcol.table
 

@@ -32,6 +32,18 @@ case class AllOf(cod:ColObject) extends Arrow{
 	throw new java.lang.UnsupportedOperationException(
 	  "AllOf().inverse")
 }
+trait BoolUnaryOp extends Arrow{
+  require(cond.cod == BoolObject)
+  val cond:Arrow
+  def dom = cond.dom
+  def cod = BoolObject
+  def unary_~ : Arrow = 
+	throw new java.lang.UnsupportedOperationException(
+	  "BoolUnaryOp().inverse")
+}
+case class All(cond:Arrow) extends BoolUnaryOp
+case class Any(cond:Arrow) extends BoolUnaryOp
+
 
 
 trait EndoMap extends Arrow{

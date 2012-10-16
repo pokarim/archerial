@@ -81,4 +81,25 @@ object SimpleGenTrees{
   def splitToPieces(cexp:QueryExp):List[TTree] =
 	cexp.tableNodeList.map(TableTree(_,Nil)).toList
 
+  def oneTree(cexp:QueryExp,root :TableExp):TableTree = 
+	oneLine(cexp.col2tableOM.inverse,cexp.table2children,root)
+  def oneLine(table2col:Rel[TableExp,ColNode],
+			  table2children : TreeRel[TableExp],
+			  root :TableExp
+			  ):TableTree = {
+	def f(self:TableExp):State[TbxSet, TTree]={
+	  val children = table2children(self)
+	  val getparents = table2children.inverse
+	  //children.map(f).toList
+	  for {
+		_ <- modify[TbxSet](_ + self)
+		set <- init[TbxSet]
+		val directChildren = 
+		  children.filter(!getparents(_).exists(!set(_)))
+		cs <- forS(directChildren)(f(_))}
+	  yield TableTree(self, cs)
+	}
+	//val root = table2children.root
+	f(root)(Set())._2
+  }
 }

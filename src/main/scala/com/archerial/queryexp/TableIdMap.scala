@@ -19,8 +19,10 @@ package com.archerial.queryexp
 import scala.collection.immutable.Map
 import com.archerial._
 import com.archerial.utils.implicits._
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
 
-case class TableIdMap(root:TableExp, map: Map[TableExp,String], constMap: Map[ConstantQueryExp,String]) {
+case class TableIdMap(roots:Set[TableExp], map: Map[TableExp,String], constMap: Map[ConstantQueryExp,String]) {
   def contains(x:TableExp) = !gets(x).isEmpty
   def addKeyAlias(from:TableExp,to:TableExp) = 
 	copy(map=map.updated(to, map(from) ))
@@ -28,23 +30,30 @@ case class TableIdMap(root:TableExp, map: Map[TableExp,String], constMap: Map[Co
   def gets(x:TableExp):Option[String] = 
   	map.get(x)
 
-  def isRoot(t:TableExp) = t == root
+  def isRoot(t:TableExp):Boolean = roots(t)
   def addConstId(consts:Seq[ConstantQueryExp]) = {
 	val m = {for {(k,v) <- consts.zipWithIndex}
 	yield (k,TableIdMap.id2alias(v).toLowerCase)}.toMap
 	copy(constMap=m)
   }
+
+  def appendTableExps(tableList:Seq[TableExp]):TableIdMap = {
+	val startId = map.toSeq.length
+  	val seq = (for ((k,v) <- tableList.zipWithIndex)
+  			   yield (k, TableIdMap.id2alias(v + startId))).toMap
+	copy(roots= roots + tableList.head , map=map ++ seq)
+  }
+
 }
 object TableIdMap{
   def id2alias(id:Int) = 
 	if (id < ('Z'.toInt - 'A'.toInt))
 	  (id + 'A'.toInt).toChar.toString 
 	else "a%s" format(id)
-  def genTableIdMap(tableList:List[TableExp]):TableIdMap = {
-  	val seq = (for ((k,v) <- tableList.zipWithIndex)
-  			   yield (k,id2alias(v))).toMap
-	val constMmap = Map[ConstantQueryExp,String]()
-  	new TableIdMap(tableList.head, seq,constMmap)
+
+  def genTableIdMap(tableList:List[TableExp],idmap:Option[TableIdMap]=None):TableIdMap = {
+	val s = idmap.getOrElse(new TableIdMap(Set(), Map(), Map()))
+	s.appendTableExps(tableList)
   }
 
 }

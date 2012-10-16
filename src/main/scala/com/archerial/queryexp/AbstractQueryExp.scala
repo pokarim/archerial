@@ -29,8 +29,7 @@ trait AbstractQueryExp4Tree {
 	QueryExpTools.getTableExps(this)
 
   lazy val table2children:TreeRel[TableExp] = 
-	Rel.gen(tableNodeList)(
-	  _.dependentParents).inverse.asTree(rootTable)
+	Rel.gen(tableNodeList)(_.dependentParents).inverse.asTree(rootTable)
 
   lazy val rootTable:TableExp = 
 	tableNodeList.headOption.getOrElse(UnitTable)
@@ -62,7 +61,7 @@ trait AbstractQueryExp extends AbstractQueryExp4Tree{
 	vs
   }
   def row2value(row:Row ): Value
-  def getSQL(map: TableIdMap):String
+  def getSQL(map: TableIdMap,row:Option[Row]):String
   def toShortString:String = toString
 
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value]

@@ -20,6 +20,8 @@ import com.archerial.objects._
 import com.archerial._
 import com.archerial.queryexp._
 import OpArrows._
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
 
 trait AbstractArrow {
   this:Arrow => ;
@@ -74,6 +76,21 @@ trait AbstractArrow {
 	  val (_,condExp) = cond(pred2)
 	  (obj,Col(WhereNode(cTable, condExp), obj.column ))
 	}
+
+	case (pred  , Any(cond)) => {
+	  val (obj:ColObject, pcol@Col(ColNode(cTable, cCol))) = pred
+	  val (_,condExp : OpExps.=:=) = cond(pred)
+	  (obj,Exists(cTable,
+		ConstCol(ConstantColExp(
+		  WhereNode(cTable, condExp),
+		  RawVal.Int(1)
+		))))
+	  //(obj,Col(WhereNode(cTable, AnyQExp(condExp)), obj.column ))
+	  // (obj,
+	  //  AnyQExp(condExp))
+	   //Col(WhereNode(cTable, condExp), obj.column ))
+	}
+
 
  	case (pred , self@Tuple(arrows)) =>{
 	  val xs = arrows.map(_(pred));

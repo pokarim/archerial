@@ -50,9 +50,9 @@ trait BinOp extends QueryExp{
 	  case (Val(l,ln),Val(r,rn)) =>
 		Val(getRawValue(l,r), ln * rn)} 
   
-  def getSQL(map: TableIdMap):String = {
-	val l = left.getSQL(map)
-	val r = right.getSQL(map)
+  def getSQL(map: TableIdMap,row:Option[Row]):String = {
+	val l = left.getSQL(map,row)
+	val r = right.getSQL(map,row)
 	l + " "+ SQLOpString + " " + r
   }
 }
@@ -78,7 +78,7 @@ object OpExps {
 }
 trait ConstantQueryExp extends QueryExp {
   def rawVal:RawVal
-  def getSQL(map:TableIdMap):String = {
+  def getSQL(map:TableIdMap,row:Option[Row]):String = {
 	if (map.constMap.contains(this))
 	  "{%s}" format(map.constMap(this))
 	else
@@ -134,7 +134,12 @@ case class Col(colNode: ColNode) extends QueryExp{
 	  SeqUtil.distinctBy1stAndGet2nd(kvs).toList
 	}).head
   }
-  def getSQL(map: TableIdMap):String =	"%s.%s" format(map.gets(table).get, column.name)
+  def getSQL(map: TableIdMap,row:Option[Row]):String =	
+	if (map.map.contains(table))
+	  "%s.%s" format(map.gets(table).get, column.name)
+	else{
+	  "error"
+	}
 
   override def toShortString:String = column.name
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
@@ -178,5 +183,58 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
 
   def keyExp = exps.head
   def valExps = exps.tail
+
+}
+
+case class AnyQExp(cond :QueryExp) extends QueryExp{
+  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = Nil
+
+  def getDependentCol():Stream[ColExp] = 
+	cond.getDependentCol()
+
+  def getSQL(map: TableIdMap,row:Option[Row]):String =	{
+	val any = this
+	val colInfo = TreeColInfo(
+	  any.cond.col2table,
+	  SimpleGenTrees.gen(any.cond))
+	//val select = SelectGen.gen(tree,colInfo.tree_col(tree))
+	//val newRows = select.getRows(comprows)
+
+	println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+	"exists %s"
+  }
+	//"%s.%s" format(map.gets(table).get, column.name)
+  def row2value(row:Row ): Value = throw new Exception("AnyQExprow2value")
+
+}
+
+case class Exists(root:TableExp,col :ConstCol) extends QueryExp{
+  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = Nil
+
+  def getDependentCol():Stream[ColExp] = 
+	col.getDependentCol()
+
+  override lazy val colList = List(col.colList.head)
+  def getSQL(map: TableIdMap,row:Option[Row]):String =	{
+	val any = this
+	val exp = col
+	val trees = SimpleGenTrees.oneTree(exp,root).children
+	require(trees.length==1) // TODO cross join
+	val tree = trees.head
+
+	val colList = List(col.colList.head)
+	val col2table = 
+	  Rel.gen(colList)((x:ColNode) => List(x.table))
+	val colInfo = TreeColInfo(
+	  col2table,
+		trees)
+	val select = SelectGen.gen(tree,colInfo.tree_col(tree),
+							 Some(map))
+
+	val sql = select.getSQL(row)
+	"exists %s" format sql
+  }
+
+  def row2value(row:Row ): Value = throw new Exception("AnyQExprow2value")
 
 }
