@@ -202,7 +202,7 @@ case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
 	QueryExpTools.getConsts(Left(List(cond)))
 
   def getDependentCol():Stream[ColExp] = 
-	Stream(ColQExp(root,cond))
+	Stream(QExpCol(root,cond))
 	//col.getDependentCol()
 	//cond.getDependentCol()
 
@@ -214,7 +214,8 @@ case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
 	require(trees.length==1) // TODO cross join
 	val tree = trees.head
 	val colList = List(col.colList.head)
-	val col2table = Rel.gen(colList)((x:ColNode) => List(x.table))
+	val col2table = Rel.gen[ColExp,TableExp](
+	  colList)((x:ColExp) => x.tables)
 	val colInfo = TreeColInfo(col2table, trees)
 	val select = SelectGen.gen(tree,colInfo.tree_col(tree), Some(map))
 	val sql = select.getSQL(None)

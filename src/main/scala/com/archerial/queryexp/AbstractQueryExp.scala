@@ -34,11 +34,11 @@ trait AbstractQueryExp4Tree {
   lazy val rootTable:TableExp = 
 	tableNodeList.headOption.getOrElse(UnitTable)
 
-  lazy val col2table:Rel[ColNode,TableExp] = 
-	Rel.gen(colList)((x:ColNode) => List(x.table))
+  lazy val col2table:Rel[ColExp,TableExp] = 
+	Rel.gen[ColExp,TableExp](colList)((x:ColExp) => x.tables)
 
-  lazy val col2tableOM:Rel[ColNode,TableExp] = 
-	Rel.gen(colListOM)((x:ColNode) => List(x.table))
+  lazy val col2tableOM:Rel[ColExp,TableExp] = 
+	Rel.gen[ColExp,TableExp](colListOM)((x:ColExp) => x.tables)
 
   lazy val colList :List[ColNode] = 
 	QueryExpTools.colNodeList(this).distinct.toList

@@ -24,7 +24,7 @@ import SeqUtil.groupTuples
 import StateUtil.forS
 import TableTree.{Tbx,TbxSet, TTree,TTrees}
 
-case class SimpleGenTrees(table2col:Rel[TableExp,ColNode], table2children : TreeRel[Tbx]){
+case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeRel[Tbx]){
 
   import RowMulFactor.{LtOne,One,Many}
 
@@ -73,7 +73,7 @@ object SimpleGenTrees{
   def gen(cexp:QueryExp):List[TTree] = 
 	gen(cexp.col2tableOM.inverse,cexp.table2children)
 
-  def gen(table2col:Rel[TableExp,ColNode],table2children : TreeRel[Tbx]):List[TTree] = {
+  def gen(table2col:Rel[TableExp,ColExp],table2children : TreeRel[Tbx]):List[TTree] = {
 	val (main,others) = SimpleGenTrees(table2col,table2children)(table2children.root)(Set())._2
 	main :: others.toList
   }
@@ -83,7 +83,7 @@ object SimpleGenTrees{
 
   def oneTree(cexp:QueryExp,root :TableExp):TableTree = 
 	oneLine(cexp.col2tableOM.inverse,cexp.table2children,root)
-  def oneLine(table2col:Rel[TableExp,ColNode],
+  def oneLine(table2col:Rel[TableExp,ColExp],
 			  table2children : TreeRel[TableExp],
 			  root :TableExp
 			  ):TableTree = {

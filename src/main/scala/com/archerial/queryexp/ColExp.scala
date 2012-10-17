@@ -52,7 +52,7 @@ case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
 	value.toSQLString
 }
 
-case class ColQExp(table:TableExp,exp:QueryExp) extends ColExp{
+case class QExpCol(table:TableExp,exp:QueryExp) extends ColExp{
   def getTables:List[TableExp] = List(table)
   def getColNodes:List[ColNode] = Nil
   def getSQL(map: TableIdMap):String = {
