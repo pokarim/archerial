@@ -45,17 +45,17 @@ object QueryExpTools{
 	self.fold((_)=>Nil,List(_)) ++
   directParents(self).flatMap((x)=>getTableExps(x).distinct)
 
-  def colNodeList(self:QueryExp):Seq[ColNode] = 
+  def colNodeList(self:QueryExp):Seq[ColExp] = 
 	getQueryExps(Left(self)).flatMap(directColNodes)
 
-  def colNodeListOM(self:QueryExp):Seq[ColNode] = 
+  def colNodeListOM(self:QueryExp):Seq[ColExp] = 
 	getQueryExpsOM(Left(self)).flatMap(directColNodes)
 
-  def colNodeList(self:TableExp):List[ColNode] =
+  def colNodeList(self:TableExp):List[ColExp] =
 	for {Left(cexp) <- directParents(Right(self))
 		 c <- colNodeList(cexp)} yield c
 
-  def directColNodes(self:QueryExp):List[ColNode] = self match {
+  def directColNodes(self:QueryExp):List[ColExp] = self match {
 	case Col(colNode) => List(colNode)
 	case _ => Nil
   }

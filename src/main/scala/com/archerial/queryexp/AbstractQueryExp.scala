@@ -40,10 +40,10 @@ trait AbstractQueryExp4Tree {
   lazy val col2tableOM:Rel[ColExp,TableExp] = 
 	Rel.gen[ColExp,TableExp](colListOM)((x:ColExp) => x.tables)
 
-  lazy val colList :List[ColNode] = 
+  lazy val colList :List[ColExp] = 
 	QueryExpTools.colNodeList(this).distinct.toList
 
-  lazy val colListOM :List[ColNode] = 
+  lazy val colListOM :List[ColExp] = 
 	QueryExpTools.colNodeListOM(this).distinct.toList
 
 }

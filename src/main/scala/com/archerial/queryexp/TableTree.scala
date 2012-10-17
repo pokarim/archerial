@@ -43,7 +43,7 @@ case class TableTree(node:TableExp, children:List[TableTree]){
 	xs
   }
 
-  final def getForeignCols():Seq[ColNode] = 
+  final def getForeignCols():Seq[ColExp] = 
   	for {table <- allTableExps.toSeq
 		 colNode <- 
 		 QueryExpTools.colNodeList(table)//TODO add COlQEXP
