@@ -23,19 +23,22 @@ import com.archerial._
 import SeqUtil.groupTuples
 import StateUtil.forS
 import TableTree.{Tbx,TbxSet, TTree,TTrees}
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
 
 case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeRel[Tbx]){
 
   import RowMulFactor.{LtOne,One,Many}
 
-  def splitDirectChildren(root:Tbx, directChildren:Seq[Tbx]):State[TbxSet, (TTree, TTrees)] = {
+  def splitDirectChildren(root:Tbx, directChildren:Seq[Tbx], isDirect:Boolean):State[TbxSet, (TTree, TTrees)] = {
 	val mul2nodes = groupTuples(
 	  for (t <- directChildren) yield (t.rowMulFactor,t))
 	val many = mul2nodes.getOrElse(RowMulFactor.Many,Nil)
 	val one = mul2nodes.getOrElse(RowMulFactor.One,Nil)
 	val lt1 = mul2nodes.getOrElse(RowMulFactor.LtOne,Nil)
-	for {main <- forS(many.headOption.toList ++ one)(apply(_,false))
-		 other <- forS(many.drop(1) ++ lt1)(apply(_,false))}
+	
+	for {main <- forS(many.headOption.toList ++ one)(apply(_,isDirect))
+		 other <- forS(many.drop(1) ++ lt1)(apply(_,true))}
 	yield (TableTree(root,main.map(_._1).toList), 
 		   main.flatMap(_._2) ++ 
 		   other.map(_._1) ++ other.flatMap(_._2))
@@ -45,19 +48,24 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	val getparents = table2children.inverse
 	val directChildren = 
 	  children.filter(!getparents(_).exists(!set(_)))
+	pprn("table2col(root).isEmpty",root,table2col(root).isEmpty,
+		 isDirect,  children.head.rowMulFactor != LtOne
+	   )
+	val isEmp = table2col(root).isEmpty
 	if (directChildren.length == 1 && 1 == children.length
-		&& table2col(root).isEmpty && 
+		&& isEmp && 
 		(isDirect || children.head.rowMulFactor != LtOne)
 	  ){
-	  for {xs <- forS(children)(apply(_, isDirect))}
+	  for {xs <- forS(children)(apply(_, isDirect && isEmp))}
 	  yield (TableTree(root,xs.map(_._1).toList), xs.flatMap(_._2))
-	} else splitDirectChildren(root, directChildren)
+	} else splitDirectChildren(root, directChildren,isDirect && isEmp)
 
   }
 
   def apply(root:Tbx, isDirect:Boolean=true):State[TbxSet, (TTree, TTrees)] = {
 	val children = table2children(root)
 	if (children.isEmpty){
+	  pprn("root",root)
 	  for {_ <- modify[TbxSet](_ + root)}
 	  yield (TableTree(root,Nil),Nil)
 	} else for {

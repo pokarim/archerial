@@ -24,6 +24,9 @@ import SeqUtil.groupTuples
 import StateUtil.forS
 import TableTree.{Tbx,TbxSet, TTree,TTrees}
 
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
+
 case class TableTree(node:TableExp, children:List[TableTree]){
   def argCols:List[ColExp] = (for {table <- tableExps
 		 col <- table.argCols
