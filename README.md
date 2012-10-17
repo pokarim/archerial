@@ -28,7 +28,7 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
 
 <table>
   <tr><th>id </th><th>name </th><th>boss_id </th></tr>
-  <tr><td>1 </td><td>hokari </td><td>1 </td></tr>
+  <tr><td>1 </td><td>hokari </td><td>null </td></tr>
   <tr><td>2 </td><td>mikio </td><td>1 </td></tr>
   <tr><td>3 </td><td>keiko </td><td>2 </td></tr>
 </table>
@@ -153,5 +153,17 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
     "Name" : [ "manabu" ]
   } ]
 } ]"""
+
+
+	{syains >>> 
+	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
+	NamedTuple(
+	  "Name" -> name,
+	  "Subordinates" -> (sub >>> name))}.eval().prettyJsonString === """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ],
+  "Subordinates" : [ "mikio", "manabu" ]
+} ]"""
+
 
 ```

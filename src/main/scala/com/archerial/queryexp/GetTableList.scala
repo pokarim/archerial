@@ -18,6 +18,9 @@ package com.archerial.queryexp
 import scala.collection.immutable
 import com.archerial._
 
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
+
 object QueryExpTools{
   def isConst:QueryExp =>Boolean = _.isInstanceOf[ConstantQueryExp]
   def getConsts(exps:Either[Seq[QueryExp],Seq[TableExp]]):Seq[ConstantQueryExp] =
@@ -27,13 +30,15 @@ object QueryExpTools{
 	case Left(qs) => qs.flatMap((x)=>getQueryExps(Left(x)))
 	case Right(ts) => ts.flatMap((x)=>getQueryExps(Right(x)))}
 
-  def getQueryExps(self:Either[QueryExp,TableExp]):List[QueryExp] = 
+  def getQueryExps(self:Either[QueryExp,TableExp]):List[QueryExp] = {
 	self.fold(List(_),(_)=>Nil) ++
-  directParents(self).flatMap(getQueryExps)
+	directParents(self).flatMap(getQueryExps)
+  }
 
-  def getQueryExpsOM(self:Either[QueryExp,TableExp]):List[QueryExp] = 
-	self.fold(List(_),(_)=>Nil) ++
-  directParentsOM(self).flatMap(getQueryExpsOM)
+  def getQueryExpsOM(self:Either[QueryExp,TableExp]):List[QueryExp] = {
+   	self.fold(List(_),(_)=>Nil) ++
+   directParentsOM(self).flatMap(getQueryExpsOM)
+  }
 
   def getTableExps(self:QueryExp):List[TableExp] = 
 	getTableExps(Left(self)).reverse.distinct
@@ -43,17 +48,26 @@ object QueryExpTools{
 
   def getTableExps(self:Either[QueryExp,TableExp]):List[TableExp] = 
 	self.fold((_)=>Nil,List(_)) ++
-  directParents(self).flatMap((x)=>getTableExps(x).distinct)
+  directParents(self).flatMap{
+	case r if r == self=> Nil//List(t)
+	case x => 
+	getTableExps(x).distinct}
 
-  def colNodeList(self:QueryExp):Seq[ColExp] = 
+  def colNodeList(self:QueryExp):Seq[ColExp] = self match {
+	case x:Exists => List(x.qexpCol)
+	case self =>
 	getQueryExps(Left(self)).flatMap(directColNodes)
+  }
 
-  def colNodeListOM(self:QueryExp):Seq[ColExp] = 
+  def colNodeListOM(self:QueryExp):Seq[ColExp] = self match {
+	case x:Exists => List(x.qexpCol)
+	case self =>
 	getQueryExpsOM(Left(self)).flatMap(directColNodes)
+  }
 
   def colNodeList(self:TableExp):List[ColExp] =
-	for {Left(cexp) <- directParents(Right(self))
-		 c <- colNodeList(cexp)} yield c
+	 for {Left(cexp) <- directParents(Right(self))
+				 c <- colNodeList(cexp)} yield c
 
   def directColNodes(self:QueryExp):List[ColExp] = self match {
 	case Col(colNode) => List(colNode)

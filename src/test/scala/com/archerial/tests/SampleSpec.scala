@@ -67,6 +67,7 @@ class SampleSpec extends Specification {
     val Name = ColObject(syainTable,"name")
     val name = ColArrow(Id, Name)
     val boss = ColArrow(Id, Id, "id", "boss_id")
+	val sub = ~boss
     val syains = AllOf(Id)
     
     val exp = (syains >>> Filter(boss >>> name =:= "hokari") >>> name).queryExp
@@ -139,24 +140,16 @@ class SampleSpec extends Specification {
     "Name" : [ "manabu" ]
   } ]
 } ]"""
-//    }
-    // def `{` = 1
-    // def `}` = 1
-    //       def <%% = 2
-    val allNames = syains >>> NamedTuple("Name" ->name)
-    //pprn(allNames.eval().prettyJsonString)
-    //System.out.println(rr)
+	
+	{syains >>> 
+	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
+	NamedTuple(
+	  "Name" -> name,
+	  "Subordinates" -> (sub >>> name))}.eval().prettyJsonString === """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "hokari" ],
+  "Subordinates" : [ "mikio", "manabu" ]
+} ]"""
 
-    val vs =     (
-      syains >>> NamedTuple("Name" ->name)
-    ).eval()
-    "simple arrow" in {
-      (syains >>> name).eval().toSet ===
-        Set[Value](Str("hokari"),
-                   Str("keiko"),
-                   Str("mikio"),
-                   Str("manabu")
-                 )
-    }
   }
 }

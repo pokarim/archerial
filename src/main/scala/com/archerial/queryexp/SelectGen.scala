@@ -53,7 +53,8 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 	val opWhereCondss = 
 	  tableExps.map(_.getOptionalWhereConds(tableIdMap,row))
 	val _whereConds = whereConds ++ opWhereCondss.flatten
-	val ps = QueryExpTools.getConsts(Left(_whereConds))
+	val ps = QueryExpTools.getConsts(Left(_whereConds)) ++
+	colExps.flatMap(_.constants)
 	val idMap:TableIdMap = tableIdMap.addConstId(ps)
 	val idMapWithAlias:TableIdMap = tableIdMapWithAlias.addConstId(ps)
 	val tableClauses = tableExps.map{_ getSQL(idMap)}
@@ -102,7 +103,6 @@ object SelectGen {
 	val tableList = rootTableExp :: wheresOrOthers.getOrElse(false,Nil).toList
 	assert(! tableList.isEmpty, "require nonEmpty")
 	val optCols = tree.getOptionalCols
-	pprn("optCols",optCols)
 	val normalCols = 
 	  (colExps
 	   ++ colExps.flatMap(_.tables.map(_.pk))

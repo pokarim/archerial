@@ -32,6 +32,9 @@ object BinOp {
 trait BinOp extends QueryExp{
   val left:QueryExp
   val right:QueryExp
+  override def constants:Seq[ConstantQueryExp] = 
+	left.constants ++ right.constants
+
   def getDependentCol():Stream[ColExp] = left.getDependentCol() ++ right.getDependentCol()
   
   def SQLOpString:String
@@ -198,13 +201,10 @@ case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
 
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = Nil
 
-  override def constants:Seq[ConstantQueryExp] = 
-	QueryExpTools.getConsts(Left(List(cond)))
+  override def constants:Seq[ConstantQueryExp] = cond.constants
 
-  def getDependentCol():Stream[ColExp] = 
-	Stream(QExpCol(root,cond))
-	//col.getDependentCol()
-	//cond.getDependentCol()
+  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
+  def qexpCol = QExpCol(root,this)
 
   override lazy val colList = List(col.colList.head)
   def getSQL(map: TableIdMap):String =	{
@@ -216,12 +216,12 @@ case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
 	val colList = List(col.colList.head)
 	val col2table = Rel.gen[ColExp,TableExp](
 	  colList)((x:ColExp) => x.tables)
-	val colInfo = TreeColInfo(col2table, trees)
-	val select = SelectGen.gen(tree,colInfo.tree_col(tree), Some(map))
+	val colInfo = TreeColInfo(col2tableOM, trees)
+	val select = SelectGen.gen(tree,colList,Some(map))
 	val sql = select.getSQL(None)
 	"exists (%s)" format sql._1
   }
 
-  def row2value(row:Row ): Value = 
-	throw new Exception("Exists.row2value is Not Implemented")
+  def row2value(row:Row ): Value = row.d(qexpCol)
+
 }

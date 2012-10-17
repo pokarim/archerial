@@ -128,6 +128,10 @@ object FromColExp{
 	  
 	case x@ColNode(table,column) =>
 	  labeledRBracketWC("ColNode", List[DOC](hashCodeStr(table),column.name))
+	case x@QExpCol(table,exp) =>
+	  labeledRBracketWC(
+		"QExpCol", 
+		List[DOC](hashCodeStr(table),exp))
 
   }}
 

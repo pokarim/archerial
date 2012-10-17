@@ -48,9 +48,6 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	val getparents = table2children.inverse
 	val directChildren = 
 	  children.filter(!getparents(_).exists(!set(_)))
-	pprn("table2col(root).isEmpty",root,table2col(root).isEmpty,
-		 isDirect,  children.head.rowMulFactor != LtOne
-	   )
 	val isEmp = table2col(root).isEmpty
 	if (directChildren.length == 1 && 1 == children.length
 		&& isEmp && 
@@ -65,7 +62,6 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
   def apply(root:Tbx, isDirect:Boolean=true):State[TbxSet, (TTree, TTrees)] = {
 	val children = table2children(root)
 	if (children.isEmpty){
-	  pprn("root",root)
 	  for {_ <- modify[TbxSet](_ + root)}
 	  yield (TableTree(root,Nil),Nil)
 	} else for {
