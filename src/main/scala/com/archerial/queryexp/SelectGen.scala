@@ -102,6 +102,7 @@ object SelectGen {
 	val tableList = rootTableExp :: wheresOrOthers.getOrElse(false,Nil).toList
 	assert(! tableList.isEmpty, "require nonEmpty")
 	val optCols = tree.getOptionalCols
+	pprn("optCols",optCols)
 	val normalCols = 
 	  (colExps
 	   ++ colExps.flatMap(_.tables.map(_.pk))

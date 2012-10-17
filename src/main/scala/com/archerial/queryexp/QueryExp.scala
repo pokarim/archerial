@@ -190,20 +190,6 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
 
 }
 
-case class AnyQExp(cond :QueryExp) extends QueryExp{
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = Nil
-
-  def getDependentCol():Stream[ColExp] = 
-	cond.getDependentCol()
-
-  def getSQL(map: TableIdMap):String =	{
-	"exists %s"
-  }
-
-  def row2value(row:Row ): Value = throw new Exception("AnyQExprow2value")
-}
-
-//case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
 case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
   val col :ConstCol = 
 		 ConstCol(ConstantColExp(
@@ -216,7 +202,9 @@ case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
 	QueryExpTools.getConsts(Left(List(cond)))
 
   def getDependentCol():Stream[ColExp] = 
-	col.getDependentCol()
+	Stream(ColQExp(root,cond))
+	//col.getDependentCol()
+	//cond.getDependentCol()
 
   override lazy val colList = List(col.colList.head)
   def getSQL(map: TableIdMap):String =	{

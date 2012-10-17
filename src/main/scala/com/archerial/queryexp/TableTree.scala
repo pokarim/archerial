@@ -45,7 +45,8 @@ case class TableTree(node:TableExp, children:List[TableTree]){
 
   final def getForeignCols():Seq[ColNode] = 
   	for {table <- allTableExps.toSeq
-		 colNode <- QueryExpTools.colNodeList(table)
+		 colNode <- 
+		 QueryExpTools.colNodeList(table)//TODO add COlQEXP
 		 dp <- colNode.getTables
 		 val colsParent = dp.getColsRefTarget
 		 if !contains(colsParent)}

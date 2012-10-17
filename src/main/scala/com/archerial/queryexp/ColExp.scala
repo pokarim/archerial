@@ -34,12 +34,10 @@ sealed trait ColExp {
 	case ColNode(_,c) => List(c)
 	case _ => Nil
   }
-  def isPrimaryKey:Boolean = getColNodes match {
-	case List(ColNode(_,c)) if c.isPrimaryKey => true
-	case _ => false
-  }
+  def isPrimaryKey:Boolean = false
 }
 case class ColNode(table: TableExp, column: Column) extends ColExp{
+  override def isPrimaryKey:Boolean = column.isPrimaryKey
   def getTables:List[TableExp] = List(table)
   def getColNodes:List[ColNode] = List(this)
   def getSQL(map: TableIdMap):String = {
@@ -52,4 +50,14 @@ case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
   def getColNodes:List[ColNode] = Nil
   def getSQL(map: TableIdMap):String = 
 	value.toSQLString
+}
+
+case class ColQExp(table:TableExp,exp:QueryExp) extends ColExp{
+  def getTables:List[TableExp] = List(table)
+  def getColNodes:List[ColNode] = Nil
+  def getSQL(map: TableIdMap):String = {
+	exp.getSQL(map)
+	//""
+	//"%s.%s" format(map(table), column.name)
+  }
 }
