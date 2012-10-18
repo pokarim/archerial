@@ -13,68 +13,99 @@
  *  * See the License for the specific language governing permissions and
  *  * limitations under the License.
  *  */
-package com.archerial.queryexp
 
-import com.archerial.Value
-import com.archerial.utils._
+package com.archerial.queryexp
+import scala.collection.immutable
+import com.archerial._
+
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
-import scala.collection.immutable
 
-object ColEvalTool{
-  def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val tree = getter.colInfo.table_tree.one(table)
-	val vtrees = getter.colInfo.table_tree(vcol.tables.head)
-	val (ptree,pcol,pvalues) =
-	if (!vtrees.contains(tree) ){
-	  val ptree = 
-		getter.colInfo.table_tree.one(
-		  tree.node.directParent.get)
-	  val pcol = tree.node.rootCol.asInstanceOf[ColNode]//TODO
-	  val ptree2 = getter.colInfo.table_tree.one(pcol.tables.head)
-	  assert(ptree == ptree2,"ptree == ptree2")
-	  val pvals = Col(pcol).eval(vcol,values,getter)
-	  val pcol2 = Col(pcol).evalCol(vcol)
-	  (ptree,pcol2,pvals)
-	}else{
-	  (tree,vcol,values)
-	}
-	val c2v2r = 
-	  if (getter.t2c2v2r(table).contains(pcol.normalize) 
-		  || pcol == UnitTable.pk)
-		getter.t2c2v2r(table)
-	  else
-		getter.t2c2v2r(pcol.tables.head)
-	
-	if (pcol == UnitTable.pk){
-	  if(colExp ==table.pk){
-		c2v2r(colExp.normalize).keys.toSeq.filter(_.nonNull)
-	  }else{
-		c2v2r(table.pk.normalize).values.toSeq.flatMap(_.map(_.d(colExp))).filter(_.nonNull)
-	  }
-	} else {
-	  for {pv <- pvalues;
-		   row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
-		   val v = row.d(colExp)
-		   if v.nonNull}
-	  yield v
-	}
-  }
-}
+object QueryExpTools{
+  def isConst:QueryExp =>Boolean = _.isInstanceOf[ConstantQueryExp]
+  def getConsts(exps:Either[Seq[QueryExp],Seq[TableExp]]):Seq[ConstantQueryExp] =
+	getContainExps(exps).flatMap(_.constants)
 
+  def getContainExps:Either[Seq[QueryExp],Seq[TableExp]] => Seq[QueryExp] = {
+	case Left(qs) => qs.flatMap((x)=>getQueryExps(Left(x)))
+	case Right(ts) => ts.flatMap((x)=>getQueryExps(Right(x)))}
 
-
-trait TupleExpBase {
-  def row2value(row:Row ): Value =
-	 throw new Exception("hoge")
-
-  def getSQL(map: TableIdMap):String = {
-	throw new Exception("invalid operation")
+  def getQueryExps(self:Either[QueryExp,TableExp]):List[QueryExp] = {
+	self.fold(List(_),(_)=>Nil) ++
+	directParents(self).flatMap(getQueryExps)
   }
 
-  def getDependentCol():Stream[ColExp] = 
-	(keyExp::valExps).toStream.flatMap(_.getDependentCol())
+  def getQueryExpsOM(self:Either[QueryExp,TableExp]):List[QueryExp] = {
+   	self.fold(List(_),(_)=>Nil) ++
+   directParentsOM(self).flatMap(getQueryExpsOM)
+  }
 
-  def keyExp:QueryExp
-  def valExps:List[QueryExp]
+  def getTableExps(self:QueryExp):List[TableExp] = 
+	getTableExps(Left(self)).reverse.distinct
+
+  def getTableExps(self:TableExp):List[TableExp] = 
+	getTableExps(Right(self)).reverse.distinct
+
+  def getTableExps(self:Either[QueryExp,TableExp]):List[TableExp] = 
+	self.fold((_)=>Nil,List(_)) ++
+  directParents(self).flatMap{
+	case r if r == self=> Nil//List(t)
+	case x => 
+	getTableExps(x).distinct}
+
+  def colNodeList(self:QueryExp):Seq[ColExp] = self match {
+	case x:Columnable => List(x.qexpCol)
+	case self =>
+	getQueryExps(Left(self)).flatMap(directColNodes)
+  }
+
+  def colNodeListOM(self:QueryExp):Seq[ColExp] = self match {
+	case x:Columnable => List(x.qexpCol)
+	case self =>
+	getQueryExpsOM(Left(self)).flatMap(directColNodes)
+  }
+
+  def colNodeList(self:TableExp):List[ColExp] =
+	 for {Left(cexp) <- directParents(Right(self))
+				 c <- colNodeList(cexp)} yield c
+
+  def directColNodes(self:QueryExp):List[ColExp] = self match {
+	case x:Columnable => List(x.qexpCol)
+	case Col(colNode) => List(colNode)
+	case _ => Nil
+  }
+
+  def directParents(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
+	case Left(BinOp(left,right)) => List(Left(left),Left(right))
+	case Left(NTuple(exps)) => exps.map(Left(_))
+	case Left(n@NamedTupleQExp(key,exps)) => 
+	  Left(key) :: n.valExps.map(Left(_))
+	case Right(WhereNode(tableNode,cond)) => 
+	  List(Left(cond),Right(tableNode))
+	case Left(ConstCol(ConstantColExp(t,value))) => 
+	  List(Left(Col(t.pk)),Right(t))
+	case Right(JoinNode(_,leftcol,_)) => List(Left(leftcol))
+	case Left(Col(colNode)) => 
+	  List(Right(colNode.table))
+	case Left(NonNullQExp(_,Col(colNode))) => 
+	  List(Right(colNode.table))
+	case _ => Nil
+  }	
+
+  def directParentsOM(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
+	case Left(BinOp(left,right)) => List(Left(left),Left(right))
+	case Left(NTuple(exps)) => exps.map(Left(_))
+	case Left(n@NamedTupleQExp(key,exps)) => 
+	  Left(key) :: n.valExps.map(Left(_))
+	case Right(WhereNode(tableNode,cond)) => 
+	  List(Right(tableNode))
+	case Left(ConstCol(ConstantColExp(t,value))) => 
+	  List(Right(t))
+	case Right(JoinNode(_,leftcol,_)) => List(Right(leftcol.table))
+	case Left(Col(colNode)) => List(Right(colNode.table))
+	case Left(NonNullQExp(_,Col(colNode))) => 
+	  List(Right(colNode.table))
+	case _ => Nil
+  }	
+
 }
