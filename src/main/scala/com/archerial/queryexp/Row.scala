@@ -18,6 +18,9 @@ package com.archerial.queryexp
 import com.archerial._
 import scala.collection.{immutable,mutable}
 import UnitTable.UnitColExp
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
+
 object CC{
   val map = mutable.Map[ColExp,Int]()
   val map2 = mutable.Map[String,Int]()
@@ -31,13 +34,15 @@ case class Row(map : immutable.Map[ColExp,Value]=Map()){
   def getDirectValue(colnode:ColExp) = {
 	colnode match {
 	  case UnitColExp => UnitValue
-	  case c if contains(c) => map(c)
+	  case c:QExpCol => map(c)
 	  case ConstantColExp(t,value) => Val(value,1)
+	  case c:ColNode if contains(c) => map(c)
 	  case ColNode(t,column) => {
 		val target = ColNode(t.getColsRefTarget,column)
 		if (contains(target))
 		  map(target)
 		else{
+		  Val(RawVal.Str("ERROR"))
 		  assert(false,("NotFound",colnode,"in",map))
 		  map(target)
 		}
@@ -50,8 +55,11 @@ case class Row(map : immutable.Map[ColExp,Value]=Map()){
 
 object Row{
   def apply(xs: Seq[(ColExp, Value)]):Row = apply(xs.toMap)
-  def gen(cols:List[ColExp], data :List[Any]):Row = 
-	apply(cols.zip(data).map{
-	  case (x,y) => (x, x.parse2Val(y))}.toMap)
+  def gen(cols:List[ColExp], data :List[Any]):Row = {
+	val xs = cols.zip(data).map{
+	  case (x,y) => (x, x.parse2Val(y))}
+	val row = apply(xs.toMap)
+	row
+  }
 
 }

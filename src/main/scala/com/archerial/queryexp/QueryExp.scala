@@ -192,26 +192,43 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
   def valExps = exps.tail
 
 }
+trait Columnable extends QueryExp{
+  def root:TableExp
+  def qexpCol = QExpCol(root,this)
+  // def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = 	throw new java.lang.UnsupportedOperationException(
+  // 	  "Columnable().eval()")
 
-case class Exists(root:TableExp,cond:QueryExp) extends QueryExp{
-  val col :ConstCol = 
+  def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
+  ColEvalTool.eval(qexpCol, root, vcol, values, getter)
+
+}
+
+case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
+  def row2value(row:Row ): Value = {
+	row.d(qexpCol)
+  }
+  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
+  def getSQL(map: TableIdMap):String =	{
+	"(%s is not null)" format col.getSQL(map)
+  }
+  override def constants:Seq[ConstantQueryExp] = col.constants
+}
+case class Exists(root:TableExp,cond:QueryExp) extends Columnable{
+  val col :QueryExp = 
 		 ConstCol(ConstantColExp(
 		   WhereNode(root, cond),
 		   RawVal.Int(1)))
 
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = Nil
-
   override def constants:Seq[ConstantQueryExp] = cond.constants
 
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
-  def qexpCol = QExpCol(root,this)
 
   override lazy val colList = List(col.colList.head)
   def getSQL(map: TableIdMap):String =	{
 	val any = this
 	val exp = col
 	val trees = SimpleGenTrees.oneTree(exp, root).children
-	require(trees.length==1) // TODO cross join
+	require(trees.length==1,trees.length) // TODO cross join
 	val tree = trees.head
 	val colList = List(col.colList.head)
 	val col2table = Rel.gen[ColExp,TableExp](

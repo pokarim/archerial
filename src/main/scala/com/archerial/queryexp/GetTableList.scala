@@ -54,13 +54,13 @@ object QueryExpTools{
 	getTableExps(x).distinct}
 
   def colNodeList(self:QueryExp):Seq[ColExp] = self match {
-	case x:Exists => List(x.qexpCol)
+	case x:Columnable => List(x.qexpCol)
 	case self =>
 	getQueryExps(Left(self)).flatMap(directColNodes)
   }
 
   def colNodeListOM(self:QueryExp):Seq[ColExp] = self match {
-	case x:Exists => List(x.qexpCol)
+	case x:Columnable => List(x.qexpCol)
 	case self =>
 	getQueryExpsOM(Left(self)).flatMap(directColNodes)
   }
@@ -70,6 +70,7 @@ object QueryExpTools{
 				 c <- colNodeList(cexp)} yield c
 
   def directColNodes(self:QueryExp):List[ColExp] = self match {
+	case x:Columnable => List(x.qexpCol)
 	case Col(colNode) => List(colNode)
 	case _ => Nil
   }
@@ -84,7 +85,10 @@ object QueryExpTools{
 	case Left(ConstCol(ConstantColExp(t,value))) => 
 	  List(Left(Col(t.pk)),Right(t))
 	case Right(JoinNode(_,leftcol,_)) => List(Left(leftcol))
-	case Left(Col(colNode)) => List(Right(colNode.table))
+	case Left(Col(colNode)) => 
+	  List(Right(colNode.table))
+	case Left(NonNullQExp(_,Col(colNode))) => 
+	  List(Right(colNode.table))
 	case _ => Nil
   }	
 
@@ -99,6 +103,8 @@ object QueryExpTools{
 	  List(Right(t))
 	case Right(JoinNode(_,leftcol,_)) => List(Right(leftcol.table))
 	case Left(Col(colNode)) => List(Right(colNode.table))
+	case Left(NonNullQExp(_,Col(colNode))) => 
+	  List(Right(colNode.table))
 	case _ => Nil
   }	
 

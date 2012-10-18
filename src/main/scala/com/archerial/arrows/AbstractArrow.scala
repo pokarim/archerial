@@ -78,9 +78,15 @@ trait AbstractArrow {
 	}
 
 	case (pred  , Any(cond)) => {
-	  val (obj:ColObject, pcol@Col(ColNode(cTable, cCol))) = pred
-	  val (_,condExp : OpExps.=:=) = cond(pred)
-	  (obj,Exists(cTable,condExp))
+	  val (_, pcol@Col(ColNode(cTable, cCol))) = pred
+	  val (_,condExp ) = cond(pred)
+	  (BoolObject,Exists(cTable, condExp))
+	}
+
+	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {
+	  val (_, pcol@Col(ColNode(cTable, cCol))) = pred
+	  val (obj,condExp@Col(ColNode(c2,_)) ) = cond(pred)
+	  BoolObject -> queryexp.NonNullQExp(c2,condExp)
 	}
 
 

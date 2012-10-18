@@ -18,6 +18,7 @@ package com.archerial.queryexp
 import com.archerial._
 
 sealed trait ColExp {
+  def normalize = this
   def constants:Seq[ConstantQueryExp] = Nil
   def getSQL(map: TableIdMap):String
   def parse(x:Any):RawVal = x match {
@@ -45,6 +46,8 @@ case class ColNode(table: TableExp, column: Column) extends ColExp{
   def getSQL(map: TableIdMap):String = {
 	"%s.%s" format(map(table), column.name)
   }
+  override def normalize = copy(table=table.getColsRefTarget)
+
 }
 
 case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
@@ -58,10 +61,5 @@ case class QExpCol(table:TableExp,exp:QueryExp) extends ColExp{
   override def constants:Seq[ConstantQueryExp] = exp.constants
   def getTables:List[TableExp] = List(table)
   def getColNodes:List[ColNode] = Nil
-  def getSQL(map: TableIdMap):String = {
-	
-	exp.getSQL(map)
-	//""
-	//"%s.%s" format(map(table), column.name)
-  }
+  def getSQL(map: TableIdMap):String = exp.getSQL(map)
 }

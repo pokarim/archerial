@@ -69,7 +69,7 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	val (List(ttree), dropped) = Tree.dropTrunk(ancLists)
 	val rootCol = ttree.node.rootCol
 	val comprows = if(ttree.node == UnitTable)List(Row()) else {
-	  val rootValues = t2c2v2r(ttree.node)(rootCol).keys.toSeq
+	  val rootValues = t2c2v2r(ttree.node)(rootCol.normalize).keys.toSeq
 	  rootValues.flatMap(
 		getCompRows(_,ttree,table2argcol,t2c2v2r))
 	}
@@ -106,9 +106,8 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 		  for {(k,v) <- row.map } yield  (k,v)
 		)}.distinct)
 	val map2:C2V2R = map ++ Map(
-	  node.rootCol->root2row,
-	   node.pk -> pk2row
-	)
+	  node.rootCol.normalize ->root2row,
+	  node.pk.normalize -> pk2row)
 	val maps3:T2C2V2R = maps ++ Map(node ->map2)
 	maps3
   }
@@ -118,10 +117,11 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	assert(node != UnitTable, "is not UnitTable")
 	val pks = 
 	  if (rootValue.nonNull)
-		t2c2v2r(node)(node.rootCol)(rootValue).map(_.d(node.pk))
+		t2c2v2r(node)(node.rootCol.normalize)(rootValue).map(_.d(node.pk))
 	  else Nil
 	val rows = for {pk <- pks
-					row <- t2c2v2r(node)(node.pk)(pk)}
+					if pk.nonNull
+					row <- t2c2v2r(node)(node.pk.normalize)(pk)}
 			   yield row
 
 	val argcols = table2argcol(node)

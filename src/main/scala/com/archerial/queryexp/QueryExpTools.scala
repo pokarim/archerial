@@ -34,13 +34,13 @@ object ColEvalTool{
 	  val ptree2 = getter.colInfo.table_tree.one(pcol.tables.head)
 	  assert(ptree == ptree2,"ptree == ptree2")
 	  val pvals = Col(pcol).eval(vcol,values,getter)
-	  val pcol2 = Col(pcol).evalCol(pcol)
+	  val pcol2 = Col(pcol).evalCol(vcol)
 	  (ptree,pcol2,pvals)
 	}else{
 	  (tree,vcol,values)
 	}
 	val c2v2r = 
-	  if (getter.t2c2v2r(table).contains(pcol) 
+	  if (getter.t2c2v2r(table).contains(pcol.normalize) 
 		  || pcol == UnitTable.pk)
 		getter.t2c2v2r(table)
 	  else
@@ -48,13 +48,13 @@ object ColEvalTool{
 	
 	if (pcol == UnitTable.pk){
 	  if(colExp ==table.pk){
-		c2v2r(colExp).keys.toSeq.filter(_.nonNull)
+		c2v2r(colExp.normalize).keys.toSeq.filter(_.nonNull)
 	  }else{
-		c2v2r(table.pk).values.toSeq.flatMap(_.map(_.d(colExp))).filter(_.nonNull)
+		c2v2r(table.pk.normalize).values.toSeq.flatMap(_.map(_.d(colExp))).filter(_.nonNull)
 	  }
 	} else {
 	  for {pv <- pvalues;
-		   row <- c2v2r(pcol).getOrElse(pv,Nil)
+		   row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
 		   val v = row.d(colExp)
 		   if v.nonNull}
 	  yield v

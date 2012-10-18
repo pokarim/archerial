@@ -41,8 +41,30 @@ trait BoolUnaryOp extends Arrow{
 	throw new java.lang.UnsupportedOperationException(
 	  "BoolUnaryOp().inverse")
 }
+
+trait UnaryColOp extends Arrow{
+  val col:Arrow
+  def dom = col.dom
+  def unary_~ : Arrow = 
+	throw new java.lang.UnsupportedOperationException(
+	  "UnaryColOp().inverse")
+}
+
 case class All(cond:Arrow) extends BoolUnaryOp
 case class Any(cond:Arrow) extends BoolUnaryOp
+
+case class NonNull(col:Arrow) extends UnaryColOp{
+  def cod = BoolObject
+}
+case class IsNull(col:Arrow) extends UnaryColOp{
+  def cod = BoolObject
+}
+
+case class Sum(col:Arrow) extends UnaryColOp{
+  def cod = IntObject
+}
+  
+
 
 
 

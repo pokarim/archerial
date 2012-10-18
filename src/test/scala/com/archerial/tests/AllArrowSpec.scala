@@ -50,58 +50,67 @@ class AllArrowSpec extends Specification {
 	val isHokari = name =:= Const(Str("hokari"))
 	val onlyMikio = Filter(isMikio)
 	val onlyHokari = Filter(isHokari)
-	// println(name.queryExp.eval().toSet)
-	
-	if (true){
-	val a = syains >>> Filter(name =:= Const(Str("hokari"))) >>>
-	  Filter(Any(sub >>> name  =:= Const(Str("hokari")))) >>>Tuple(
-	  syainId,
-	  name
-	  //sub >>> name
+	"any directly" in {
+	  val a = {
+		syains >>> 
+		Filter(Any(sub >>> name  =:= Const(Str("hokari")))) >>>
+		Tuple(syainId,name)}.eval()
+	  a.toSet === Set(
+		VTuple(VList(Int(1)),
+			   VList(Str("hokari"))))
+	}
+	"any tupled" in {
+	  val b = {
+	  syains >>> 
+		Filter(name  =:= Const(Str("hokari")))>>>
+		Tuple(
+		  syainId,
+		  Filter(Any(sub >>> name  =:= Const(Str("hokari")))) >>> 		sub >>> name
+		)}
+	  b.eval().toSet === Set(
+		VTuple(VList(Int(1)),
+			   VList(Str("hokari"),Str("mikio"))
+			 ))
+	}
+	"any tupled 2" in {
+	  val b = {
+	  syains >>> 
+		Filter(Any(NonNull(sub >>> sub >>> name)))  >>>
+		Tuple(
+		  syainId
+		)}
+	  b.eval().toSet === Set(
+		VTuple(VList(Int(1))
+			 ))
+
+	  val b3 = {
+	  syains >>> Tuple(
+		syainId
+		,Filter(NonNull(sub >>> sub >>> name))
+		,NonNull(sub >>> sub >>> name)
+		,Any(NonNull(sub >>> sub >>> name))
+		)
+	  }
+	  b3.eval().toSet === Set(
+		VTuple(VList(Int(1)),
+			   VList(Int(1)),
+			   VList(Bool(true)),
+			   VList(Bool(true))
+			 ),
+		VTuple(VList(Int(2)),
+			   VList(),
+			   VList(Bool(false)),
+			   VList(Bool(false))
+			 ),
+		VTuple(VList(Int(3)),
+			   VList(),
+			   VList(Bool(false)),
+			   VList(Bool(false))
+			 )
 	  )
 
-	  
-	val exp = a.queryExp.asInstanceOf[NTuple]
-	  pprn("exp", exp)
-	  pprn(exp.tableNodeList)
-	  // val any = exp.valExps.head.asInstanceOf[AnyQExp]
-// 	  pprn("qexp", exp.tableNodeList)//table2children.pairs)
-// 	  pprn("anyarrow",any)
-// 	  val anyTrees  = SimpleGenTrees.gen(any)
-// 	  pprn("anyTrees:",anyTrees)
-// 	  val anyCondTrees  = SimpleGenTrees.gen(any.cond)
-// 	  pprn("anyCondTrees:",anyCondTrees)
-	  val trees = SimpleGenTrees.gen(exp)
-// 	  val trees = SimpleGenTrees.gen(exp)//splitToPieces(exp)
- 	  //pprn(trees)
-	  val tree= trees.head
-	  val colInfo = TreeColInfo(
-		exp.col2table,
-		trees)
-	  //pprn(colInfo.table_tree.pairs)
-	  
-	  //exp.eval()
-
-
-	  val select = SelectGen.gen(tree,colInfo.tree_col(tree))
-	  pprn("tableIdMap",select.tableIdMap.map)
-	  pprn(select.getSQL(None))
-// 	//val newRows = select.getRows(comprows)
-// pprn("eval:",exp.eval())
-	  // val getter = RowsGetter(colInfo)
-	  // pprn(getter.t2c2v2r)
-	  // val vs = exp.eval(
-	  // 	UnitTable.pk,
-	  // 	List(UnitValue),
-	  // 	getter)
-	  // pprn(vs)
-	}	
-	
-	"start with 'Hello'" in {
-      "Hello world" must startWith("Hello")
-	}
-	"end with 'world'" in {
-      "Hello world" must endWith("world")
+	  val exp = b3.queryExp
+	  0 === 0
 	}
   }
 }

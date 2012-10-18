@@ -116,10 +116,17 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
   = {
+	if (row.filter(_.contains(tableNode.primaryKeyCol)).nonEmpty){
 	  List(OpExps.=:=(
 		ConstantExp(row.get.d(tableNode.primaryKeyCol) match {
-					  case Val(rawval,_) => rawval}), 
+		  case Val(rawval,_) => rawval}), 
 		Col(altPrimaryKeyCol)))}
+	else{
+	  List(OpExps.=:=(Col(tableNode.primaryKeyCol), 
+					Col(altPrimaryKeyCol)
+					))
+	}
+  }
 
   override def filterRows(rows:Seq[Row]):Seq[Row] = 
 	rows.filter{(row)=>{

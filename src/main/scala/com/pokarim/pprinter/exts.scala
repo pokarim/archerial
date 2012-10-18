@@ -44,6 +44,8 @@ object ToDocImplicits{
 
 	case Exists(ctable,cond) =>
 	  	  labeledRBracketWC("Exists", List[DOC](ctable,cond))
+	case NonNullQExp(ctable,cond) =>
+	  	  labeledRBracketWC("NonNullQExp", List[DOC](ctable,cond))
 	// case AnyQExp(cond) =>
 	//   labeledRBracketWC("AnyQExp", List[DOC](cond))
 	  
