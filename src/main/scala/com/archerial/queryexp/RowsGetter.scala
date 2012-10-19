@@ -81,33 +81,20 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
   def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R =
 	tree.getAllTableExps.foldLeft(Map(): T2C2V2R)(
 	  (map : T2C2V2R, t : TableExp) =>
-	  getMapsC(t,map,rows))
-
-  def getMapsC(node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
+	  getMapsC(tree, t,map,rows))
+  def getMapsC(tree:TableTree,node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
 	val map:Map[ColExp,Map[Value,Seq[Row]]] = maps.getOrElse(node,Map[ColExp,Map[Value,Seq[Row]]]())
-	val ancestorsOrSelf = QueryExpTools.getTableExps(node).toSet
-	val rows2 = distinct(rows)((row)=>
+	val rootCol = node.rootCol
+	val rootPk = node.rootCol.tables.head.pk
+	val anc = (node :: node.rootCol.tables).toSet
+	val pk = node.pk
+	val rows2:Seq[Row] = distinct(rows)((row)=>
 	  for {(k,v) <- row.map
-		   if k.tables.forall(ancestorsOrSelf(_))} yield (k,v)
-							 )
-	val root2row:Map[Value,Seq[Row]] = groupTuples({
-	  for {row <- rows2
-		   val v = row.d(node.rootCol)
-		   if v.nonNull}
-	  yield v -> Row(
-		for {(k,v) <- row.map} yield  (k,v)
-	  )}.distinct)
-	val pk2row:Map[Value,Seq[Row]] = 
-	  groupTuples({
-		for {row <- rows2
-			 val v = row.d(node.pk)
-			 if v.nonNull}
-		yield v -> Row(
-		  for {(k,v) <- row.map } yield  (k,v)
-		)}.distinct)
-	val map2:C2V2R = map ++ Map(
-	  node.rootCol.normalize ->root2row,
-	  node.pk.normalize -> pk2row)
+		   if k.tables.forall(node == _ ) || rootCol == k}
+	  yield (k,v))
+	val map2:C2V2R = map ++ 
+	(for {col <- Set(rootCol,pk)}
+	yield col.normalize -> groupByCol(rows2,col)).toMap
 	val maps3:T2C2V2R = maps ++ Map(node ->map2)
 	maps3
   }
@@ -140,6 +127,16 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 		  yield Row(l.map ++ r.map))
 	  }
 	rows2.flatten.distinct
+  }
+  def groupByCol(rows:Seq[Row],col:ColExp):Map[Value,Seq[Row]] = {
+	val root2row:Map[Value,Seq[Row]] = groupTuples({
+	  for {row <- rows
+		   val v = row.d(col)
+		   if v.nonNull}
+	  yield v -> Row(
+		for {(k,v) <- row.map} yield  (k,v)
+	  )}.distinct)
+	root2row
   }
 	
 }
