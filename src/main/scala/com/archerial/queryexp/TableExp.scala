@@ -101,18 +101,32 @@ case class TableNode(table: Table) extends TableExp{
 	"%s as %s" format(table.name, map(this))
 }
 
+case class GroupByNode(key:Col) extends TableExp{
+  def directParent:Option[TableExp] = Some(UnitTable)
+  def argCols:List[ColExp] = List(UnitTable.primaryKeyCol)
+
+  def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
+  
+  def altRoot:Table = key.colNode.table.altRoot
+  def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
+  def primaryKeyCol:ColNode = 
+	key.colNode.table.primaryKeyCol
+
+  def getSQLNonRoot(map: TableIdMap):String = 
+	"group by %s" format(map(this))
+}
+
 case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
   def directParent:Option[TableExp] = Some(tableNode)
-  def argCols:List[ColExp] = (tableNode.primaryKeyCol :: cond.getDependentCol.toList).distinct
+  def argCols:List[ColExp] = 
+	(tableNode.primaryKeyCol :: cond.getDependentCol.toList).distinct
 
-  def primaryKeyCol:ColNode = ColNode(this,
-									  tableNode.primaryKeyCol.column)
+  def primaryKeyCol:ColNode = 
+	ColNode(this, tableNode.primaryKeyCol.column)
 
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] =
-	if (isRoot)
-	  List((tableNode.primaryKeyCol, altPrimaryKeyCol))
-	else
-	  List((tableNode.primaryKeyCol, altPrimaryKeyCol))
+	List((tableNode.primaryKeyCol, altPrimaryKeyCol))
 
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp]
   = {

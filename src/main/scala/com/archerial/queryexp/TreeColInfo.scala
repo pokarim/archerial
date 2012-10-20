@@ -20,7 +20,7 @@ import com.archerial._
 import com.archerial.utils.implicits._
 import com.archerial.utils._
 
-case class TreeColInfo(col2tree:Rel[ColExp,TableExp],trees:Seq[TableTree]){
+case class TreeColInfo(col2table:Rel[ColExp,TableExp],trees:Seq[TableTree]){
   val root:TableTree = trees(0)
   val table_tree = 
 	Rel.gen(trees)(UnitTable #:: _.tableExps).inverse
@@ -28,8 +28,8 @@ case class TreeColInfo(col2tree:Rel[ColExp,TableExp],trees:Seq[TableTree]){
   val table_tree_NoUnit = 
 	Rel.gen(trees)(_.tableExps).inverse
   
-  val _tree_col = (col2tree ++ table_tree).inverse
-  
+  val _tree_col = (col2table ++ table_tree).inverse
+  val table2col = col2table.inverse
   val dep_col:Rel[ColExp,TableExp] = 
 	Rel(for {tree <- trees
 				col <- tree.getForeignCols()

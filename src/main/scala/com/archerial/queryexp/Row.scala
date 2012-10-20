@@ -42,8 +42,8 @@ case class Row(map : immutable.Map[ColExp,Value]=Map()){
 		if (contains(target))
 		  map(target)
 		else{
+		  pprn(("NotFound",colnode),("in",map))
 		  Val(RawVal.Str("ERROR"))
-		  assert(false,("NotFound",colnode,"in",map))
 		  map(target)
 		}
 	  }

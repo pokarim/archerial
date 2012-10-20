@@ -200,19 +200,30 @@ trait Columnable extends QueryExp{
 
   def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
   ColEvalTool.eval(qexpCol, root, vcol, values, getter)
+  def row2value(row:Row ): Value = row.d(qexpCol)
 
 }
 
 case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
-  def row2value(row:Row ): Value = {
-	row.d(qexpCol)
-  }
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
   def getSQL(map: TableIdMap):String =	{
 	"(%s is not null)" format col.getSQL(map)
   }
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
+
+case class SumQExp(keycol:Col,valcol:Col) extends Columnable{
+  val root:TableExp = //keycol.colNode.table
+	GroupByNode(keycol)
+  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
+  def getSQL(map: TableIdMap):String =	{
+	"sum(%s)" format valcol.getSQL(map)
+  }
+  override def constants:Seq[ConstantQueryExp] = 
+	keycol.constants ++ valcol.constants
+}
+
+
 case class Exists(root:TableExp,cond:QueryExp) extends Columnable{
   val col :QueryExp = 
 		 ConstCol(ConstantColExp(
@@ -239,6 +250,5 @@ case class Exists(root:TableExp,cond:QueryExp) extends Columnable{
 	"exists (%s)" format sql._1
   }
 
-  def row2value(row:Row ): Value = row.d(qexpCol)
 
 }

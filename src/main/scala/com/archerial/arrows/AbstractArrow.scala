@@ -83,6 +83,13 @@ trait AbstractArrow {
 	  (BoolObject,Exists(cTable, condExp))
 	}
 
+	case (pred  , Sum(col)) => {
+	  val (obj:ColObject, keycol@Col(_)) = pred
+	  val (_, valcol@Col(_) ) = col(pred)
+	  IntObject -> queryexp.SumQExp(
+		keycol,valcol)
+	}
+
 	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {
 	  val (_, pcol@Col(ColNode(cTable, cCol))) = pred
 	  val (obj,condExp@Col(ColNode(c2,_)) ) = cond(pred)

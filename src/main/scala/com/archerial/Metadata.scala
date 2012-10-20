@@ -17,6 +17,8 @@
 package com.archerial
 import anorm.SQL
 import com.archerial.utils.implicits._
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
 
 trait Metadata extends {
   def all:List[Table]

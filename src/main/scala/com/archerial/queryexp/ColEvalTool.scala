@@ -15,6 +15,7 @@
  *  */
 package com.archerial.queryexp
 
+import com.archerial.Column
 import com.archerial.Value
 import com.archerial.utils._
 import com.pokarim.pprinter._
@@ -36,15 +37,27 @@ object ColEvalTool{
 	  val pvals = Col(pcol).eval(vcol,values,getter)
 	  val pcol2 = Col(pcol).evalCol(vcol)
 	  (ptree,pcol2,pvals)
-	}else{
+	}else if (getter.t2c2v2r(table).contains(vcol.normalize) 
+		  || vcol == UnitTable.pk){
 	  (tree,vcol,values)
+	}else{
+	  val rootCol = 
+		colExp.tables.head.rootCol.asInstanceOf[ColNode]
+	  val pvals = Col(rootCol).eval(vcol,values,getter)
+	  val pcol2 = Col(rootCol).evalCol(vcol)
+	  (tree,pcol2,pvals)
+//(tree,vcol,values)
+
 	}
+	// pprn(getter.t2c2v2r(table).keys.toSet,(pcol.normalize) )
+	// pprn(pcol.tables.head)
 	val c2v2r = 
 	  if (getter.t2c2v2r(table).contains(pcol.normalize) 
 		  || pcol == UnitTable.pk)
 		getter.t2c2v2r(table)
-	  else
+	  else{
 		getter.t2c2v2r(pcol.tables.head)
+	  }
 	
 	if (pcol == UnitTable.pk){
 	  if(colExp ==table.pk){
@@ -53,11 +66,13 @@ object ColEvalTool{
 		c2v2r(table.pk.normalize).values.toSeq.flatMap(_.map(_.d(colExp))).filter(_.nonNull)
 	  }
 	} else {
-	  for {pv <- pvalues;
-		   row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
-		   val v = row.d(colExp)
-		   if v.nonNull}
+	  val r = for {
+		pv <- pvalues;
+		row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
+		val v = row.d(colExp)
+		if v.nonNull}
 	  yield v
+	  r
 	}
   }
 }
