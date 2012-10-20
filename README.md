@@ -37,13 +37,13 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
 
 ```scala
     implicit val conn :java.sql.Connection = ...
-    val syainTable = Table("syain", List(
+    val staffTable = Table("staff", List(
       Column("id", int.primaryKey),
       Column("name", varchar(200)),
       Column("boss_id", int)
     ))
-    syainTable.createTable()
-    syainTable.insertRows(
+    staffTable.createTable()
+    staffTable.insertRows(
       List("id"-> 1, "name"-> "hokari", "boss_id" -> Null),
       List("id"-> 2, "name"-> "mikio", "boss_id" -> 1),
       List("id"-> 3, "name"-> "keiko", "boss_id" -> 2),
@@ -56,8 +56,8 @@ ColObjectは１カラムだけのテーブルのようなものです。
 RDBの定義域（ドメイン）にも近いものです。
 
 ```scala
-    val Id = ColObject(syainTable,"id")
-    val Name = ColObject(syainTable,"name")
+    val Id = ColObject(staffTable,"id")
+    val Name = ColObject(staffTable,"name")
 ```
 
 Objectの次は,カラムのペアをArrowにマッピングします。
@@ -70,12 +70,12 @@ ColArrowは、入力元の定義域となるColObjectと
     val name = ColArrow(Id, Name) // Id -> Name
 ```
 
-ここで定義したものはsyainテーブルのidカラムとnameカラムの２列のみからなるテーブルのようなものです。
+ここで定義したものはstaffテーブルのidカラムとnameカラムの２列のみからなるテーブルのようなものです。
 次のように、自己結合外部キーと関連して、入力元と出力先のオブジェクトが
 同一となる場合は、各カラム名も指定します。
 
 ```scala
-    val boss = ColArrow(Id, Id, syainTable, "id", "boss_id") // Id -> Id
+    val boss = ColArrow(Id, Id, staffTable, "id", "boss_id") // Id -> Id
 ```
 最後に、入力元としてUnitを取り、出力先として
 Idを取るArrowを定義します。これも、２列のテーブルのようなものですが、
@@ -83,31 +83,31 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
 １列のみのテーブル、単なる集合のようなものとなります。
 
 ```scala
-    val syains = AllOf(Id) // Unit -> Id
+    val staffs = AllOf(Id) // Unit -> Id
 ```
 
 ```javascript
-    syains.eval().prettyJsonString ===
+    staffs.eval().prettyJsonString ===
       """[ 1, 3, 2, 4 ]"""
 
-    {syains >>> name}.eval().prettyJsonString ===
+    {staffs >>> name}.eval().prettyJsonString ===
       """[ "hokari", "keiko", "mikio", "manabu" ]"""
 
-    {syains >>> Filter(name =:= "hokari") >>> name
+    {staffs >>> Filter(name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
              """[ "hokari" ]"""
 
-    {syains >>> Filter(boss >>> name =:= "hokari") >>> name
+    {staffs >>> Filter(boss >>> name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
              """[ "mikio", "manabu" ]"""
 
-    {syains >>> boss }.eval().prettyJsonString ===
+    {staffs >>> boss }.eval().prettyJsonString ===
       """[ 2, 1, 1 ]"""
     
-    {syains >>> boss >>> name}.eval().prettyJsonString ===
+    {staffs >>> boss >>> name}.eval().prettyJsonString ===
       """[ "hokari", "hokari", "mikio" ]"""
 
-    {syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
+    {staffs >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
       """[ {
   "__id__" : [ 1 ],
   "Name" : [ "hokari" ]
@@ -122,7 +122,7 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
   "Name" : [ "manabu" ]
 } ]"""
 
-    (syains >>> Filter(name =:= "hokari") >>>
+    (staffs >>> Filter(name =:= "hokari") >>>
      NamedTuple("Name" -> name,
                 "Boss" -> (boss >>> name),
                 "Subordinates" -> (~boss >>> name)
@@ -134,7 +134,7 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
   "Subordinates" : [ "mikio", "manabu" ]
 } ]"""
 
-    {syains >>> Filter(name =:= Const("hokari")) >>>
+    {staffs >>> Filter(name =:= Const("hokari")) >>>
              NamedTuple("Name" -> name,
                         "Boss" -> (boss >>> name),
                         "Subordinates" -> 
@@ -155,7 +155,7 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
 } ]"""
 
 
-	{syains >>> 
+	{staffs >>> 
 	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
 	NamedTuple(
 	  "Name" -> name,
