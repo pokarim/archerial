@@ -30,7 +30,7 @@ object Tables extends Metadata{
     Column("info", ColType.varchar(200))
   ))
 
-  val item = Table("item", List(
+  val product = Table("product", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("name", ColType.varchar(200)),
     Column("price", ColType.int)
@@ -45,7 +45,7 @@ object Tables extends Metadata{
   val orderItem = Table("orderItem", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("order_id", ColType.int),
-    Column("item_id", ColType.int),
+    Column("product_id", ColType.int),
     Column("qty", ColType.int)
   ))
   
@@ -64,5 +64,5 @@ object Tables extends Metadata{
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("name", ColType.varchar(200))
   ))
-  def all = List(staff,staffInfo,hobby,dept,area,order,item,orderItem)
+  def all = List(staff,staffInfo,hobby,dept,area,order,product,orderItem)
 }

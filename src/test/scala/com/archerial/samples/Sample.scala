@@ -46,20 +46,22 @@ object SampleData{
 	  List("info"-> "hokariInfo")
 	)
 	
-	Tables.item.insertRows(
+	Tables.product.insertRows(
 	  List("name"-> "apple", "price" -> 150),
 	  List("name"-> "orange", "price" -> 100),
 	  List("name"-> "melon", "price" -> 500))
 
 	Tables.order.insertRows(
-	  List("memo"-> "AA"),
-	  List("memo"-> "BB"),
-	  List("memo"-> "CC"))
+	  List("memo"-> "AA", "staff_id" -> 2),
+	  List("memo"-> "BB", "staff_id" -> 2),
+	  List("memo"-> "CC", "staff_id" -> 3))
 
 	Tables.orderItem.insertRows(
-	  List("order_id"-> 1,"item_id"-> 1,"qty" -> 3),
-	  List("order_id"-> 1,"item_id"-> 3,"qty" -> 2),
-	  List("order_id"-> 2,"item_id"-> 3,"qty" -> 1))
+	  List("order_id"-> 1,"product_id"-> 1,"qty" -> 3),
+	  List("order_id"-> 1,"product_id"-> 3,"qty" -> 2),
+	  List("order_id"-> 2,"product_id"-> 3,"qty" -> 1),
+	  List("order_id"-> 3,"product_id"-> 2,"qty" -> 5)
+	)
 
 
   }  

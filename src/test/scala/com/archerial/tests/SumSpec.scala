@@ -55,9 +55,28 @@ class SumSpec extends Specification {
 		Tuple(
 		  Order.Id.id,
 		  // Order.memo,
-		  Order.orderItems >>> OrderItem.item >>> Item.name)}
+		  Order.orderItems >>> OrderItem.product >>> Product.name)}
+
+	  val sum2 = {
+		AllOf(Staff.Id) >>> //>>> Filter(Order.Id.id =:= Const(Int(1))) >>>
+		Tuple(
+		  Staff.Id.id,
+		  ~Order.staffs >>> Tuple(
+			Order.Id.id,
+			Order.memo,
+			Order.orderItems >>> Tuple(
+			  OrderItem.Id.id,
+			  OrderItem.qty,
+			  OrderItem.product >>> Product.name
+			  )
+		  ),
+		  ~Order.staffs >>>
+		  Order.orderItems >>> OrderItem.product >>> Product.name)}
+
+
 	  //pprn(sum1.eval())
-	  val exp = sum1.queryExp
+	  val exp2 = sum1.queryExp
+	  val exp = sum2.queryExp
 val exp_ = 	  	  (staffs >>> 
 				    //Filter(staffId =:= Const(Int(2)))>>>
 				   Tuple(

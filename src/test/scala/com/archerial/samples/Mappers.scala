@@ -32,7 +32,7 @@ object Mappers{
     val HobbyId = ColObject(hobby,"id")
     val DeptId = ColObject(dept,"id")
     val OrderId = ColObject(order,"id")
-    val ItemId = ColObject(item,"id")
+    val ProductId = ColObject(product,"id")
     val OrderItemId = ColObject(orderItem,"id")
   }
   import TableObjects._
@@ -41,8 +41,8 @@ object Mappers{
 
     val orderItem2order = 
 	  ColArrow(orderItem, OrderItemId, OrderId, "id", "order_id")
-    val orderItem2item = 
-	  ColArrow(orderItem, OrderItemId, ItemId, "id", "item_id")
+    val orderItem2product = 
+	  ColArrow(orderItem, OrderItemId, ProductId, "id", "product_id")
 	
     val staff2dept = ColArrow(staff, StaffId, DeptId, "id", "dept_id")
 	
@@ -64,19 +64,22 @@ object Mappers{
     val Memo = ColObject("memo")
     val memo = ColArrow(Id, Memo)
   	val orderItems = ~orderItem2order
+	val staffs = order2staff
   }
 
-  object Item extends forTableOf(Tables.item){
-    val Id = ItemId
+  object Product extends forTableOf(Tables.product){
+    val Id = ProductId
     val Name = ColObject("name")
     val name = ColArrow(Id, Name)
-  	val orderItems = ~orderItem2item
+  	val orderItems = ~orderItem2product
   }
 
   object OrderItem extends forTableOf(Tables.orderItem){
     val Id = OrderItemId
-  	val item = orderItem2item
+    val Qty = ColObject("qty")
+  	val product = orderItem2product
   	val order = orderItem2order
+  	val qty = ColArrow(Id,Qty)
   }
 
   
