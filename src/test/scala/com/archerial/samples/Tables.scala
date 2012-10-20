@@ -18,14 +18,14 @@ package com.archerial.samples
 import com.archerial._
 
 object Tables extends Metadata{
-  val syain = Table("syain", List(
+  val staff = Table("staff", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("name", ColType.varchar(200)),
     Column("age", ColType.int),
     Column("dept_id", ColType.int),
     Column("boss_id", ColType.int)
   ))
-  val syainInfo = Table("syainInfo", List(
+  val staffInfo = Table("staffInfo", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("info", ColType.varchar(200))
   ))
@@ -39,7 +39,7 @@ object Tables extends Metadata{
   val order = Table("orders", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("memo", ColType.varchar(200)),
-    Column("syain_id", ColType.int)
+    Column("staff_id", ColType.int)
   ))
   
   val orderItem = Table("orderItem", List(
@@ -51,7 +51,7 @@ object Tables extends Metadata{
   
   val hobby = Table("hobby", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
-    Column("syain_id", ColType.int),
+    Column("staff_id", ColType.int),
     Column("name", ColType.varchar(200)),
     Column("rank", ColType.varchar(200))
   ))
@@ -64,5 +64,5 @@ object Tables extends Metadata{
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("name", ColType.varchar(200))
   ))
-  def all = List(syain,syainInfo,hobby,dept,area,order,item,orderItem)
+  def all = List(staff,staffInfo,hobby,dept,area,order,item,orderItem)
 }

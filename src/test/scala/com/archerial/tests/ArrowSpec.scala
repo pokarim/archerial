@@ -37,24 +37,24 @@ class ArrowSpec extends Specification {
 	SampleData.createTables 
 	SampleData.insertSampleData
 
-	val boss = Syain.boss
+	val boss = Staff.boss
 	val sub = ~boss
-	val syains = AllOf(Syain.Id)
-	val name = Syain.name
+	val staffs = AllOf(Staff.Id)
+	val name = Staff.name
 	val bossname = boss >>> name
 	val subname = sub >>> name
-	val syainId = Syain.Id.id
+	val staffId = Staff.Id.id
 	val isMikio = name =:= Const(Str("mikio"))
 	val isHokari = name =:= Const(Str("hokari"))
 if(false){	
 	"simple arrow" in {
-	  (syains >>> name).queryExp.eval().toSet ===
+	  (staffs >>> name).queryExp.eval().toSet ===
 		Set[Value](Str("hokari"),
 				   Str("keiko"),
 				   Str("mikio"))
 	}
 	"simple tuple" in {
-	  (syains >>> Tuple(syainId, name)).queryExp.eval().toSet === 
+	  (staffs >>> Tuple(staffId, name)).queryExp.eval().toSet === 
 		Set(
 		  VTuple(VList(Int(1)),
 				 VList(Str("hokari"))),
@@ -65,16 +65,16 @@ if(false){
 	}
 	"simple filter tuple" in {
 	
-	  (syains >>> Filter(isMikio) >>> Tuple(
-		syainId
+	  (staffs >>> Filter(isMikio) >>> Tuple(
+		staffId
 		,name)).queryExp.eval().toSet === 
 		  Set(
 			VTuple(VList(Int(2)),
 				   VList(Str("mikio"))))
 	}
 	"filter arrow" in {
-	  ((syains >>> Filter(isHokari) >>> 
-		 Tuple(syainId ,name,subname)
+	  ((staffs >>> Filter(isHokari) >>> 
+		 Tuple(staffId ,name,subname)
 	   ).queryExp.eval().toSet) === 
 	  Set(
 	   VTuple(VList(Int(1)),
@@ -84,15 +84,15 @@ if(false){
 	}
   }
 	"filter bossname subname" in {
-	  // ((syains >>> Filter(isMikio) >>> Tuple(
-	  // 	syainId
+	  // ((staffs >>> Filter(isMikio) >>> Tuple(
+	  // 	staffId
 	  // 	,name
 	  // 	,bossname
 	  // 	,subname
 	  // )).queryExp.eval().toSet)
 	  
-	  (syains >>> Tuple(
-		syainId
+	  (staffs >>> Tuple(
+		staffId
 		,name
 		,boss >>> name
 		,boss >>> Filter(boss >>> name =:= name) >>> name

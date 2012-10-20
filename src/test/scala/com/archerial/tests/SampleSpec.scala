@@ -50,51 +50,51 @@ class SampleSpec extends Specification {
   "Sample 1" should {
     val h2driver = Class.forName("org.h2.Driver")
     implicit val con:java.sql.Connection = DriverManager.getConnection("jdbc:h2:mem:sampespec", "", "")
-    val syainTable = Table("syain", List(
+    val staffTable = Table("staff", List(
       Column("id", int.primaryKey),
       Column("name", varchar(200)),
       Column("boss_id", int)
     ))
-    syainTable.createTable()
-    syainTable.insertRows(
+    staffTable.createTable()
+    staffTable.insertRows(
       List("id"-> 1, "name"-> "hokari", "boss_id" -> Null),
       List("id"-> 2, "name"-> "mikio", "boss_id" -> 1),
       List("id"-> 3, "name"-> "keiko", "boss_id" -> 2),
       List("id"-> 4, "name"-> "manabu", "boss_id" -> 1)
     )
 
-    val Id = ColObject(syainTable,"id")
-    val Name = ColObject(syainTable,"name")
+    val Id = ColObject(staffTable,"id")
+    val Name = ColObject(staffTable,"name")
     val name = ColArrow(Id, Name)
     val boss = ColArrow(Id, Id, "id", "boss_id")
 	val sub = ~boss
-    val syains = AllOf(Id)
+    val staffs = AllOf(Id)
     
-    val exp = (syains >>> Filter(boss >>> name =:= "hokari") >>> name).queryExp
+    val exp = (staffs >>> Filter(boss >>> name =:= "hokari") >>> name).queryExp
     pprn(exp)
     pprn(QueryExpTools.getQueryExps(Left(exp)))
     //exp.eval()
-    syains.eval().prettyJsonString ===
+    staffs.eval().prettyJsonString ===
       """[ 1, 3, 2, 4 ]"""
 
-    {syains >>> name}.eval().prettyJsonString ===
+    {staffs >>> name}.eval().prettyJsonString ===
       """[ "hokari", "keiko", "mikio", "manabu" ]"""
 
-    {syains >>> Filter(name =:= "hokari") >>> name
+    {staffs >>> Filter(name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
              """[ "hokari" ]"""
 
-    {syains >>> Filter(boss >>> name =:= "hokari") >>> name
+    {staffs >>> Filter(boss >>> name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
              """[ "mikio", "manabu" ]"""
 
-    {syains >>> boss }.eval().prettyJsonString ===
+    {staffs >>> boss }.eval().prettyJsonString ===
       """[ 2, 1, 1 ]"""
     
-    {syains >>> boss >>> name}.eval().prettyJsonString ===
+    {staffs >>> boss >>> name}.eval().prettyJsonString ===
       """[ "hokari", "hokari", "mikio" ]"""
 
-    {syains >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
+    {staffs >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
       """[ {
   "__id__" : [ 1 ],
   "Name" : [ "hokari" ]
@@ -109,7 +109,7 @@ class SampleSpec extends Specification {
   "Name" : [ "manabu" ]
 } ]"""
 
-    (syains >>> Filter(name =:= "hokari") >>>
+    (staffs >>> Filter(name =:= "hokari") >>>
      NamedTuple("Name" -> name,
                 "Boss" -> (boss >>> name),
                 "Subordinates" -> (~boss >>> name)
@@ -121,7 +121,7 @@ class SampleSpec extends Specification {
   "Subordinates" : [ "mikio", "manabu" ]
 } ]"""
 
-    {syains >>> Filter(name =:= Const("hokari")) >>>
+    {staffs >>> Filter(name =:= Const("hokari")) >>>
              NamedTuple("Name" -> name,
                         "Boss" -> (boss >>> name),
                         "Subordinates" -> 
@@ -141,7 +141,7 @@ class SampleSpec extends Specification {
   } ]
 } ]"""
 	
-	{syains >>> 
+	{staffs >>> 
 	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
 	NamedTuple(
 	  "Name" -> name,

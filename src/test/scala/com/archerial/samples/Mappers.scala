@@ -27,8 +27,8 @@ object Mappers{
   }
   
   object TableObjects {
-    val SyainId = ColObject(syain,"id")
-    val SyainInfoId = SyainId
+    val StaffId = ColObject(staff,"id")
+    val StaffInfoId = StaffId
     val HobbyId = ColObject(hobby,"id")
     val DeptId = ColObject(dept,"id")
     val OrderId = ColObject(order,"id")
@@ -37,26 +37,26 @@ object Mappers{
   }
   import TableObjects._
   object ForeginArrows{
-    val hobby2syain = ColArrow(hobby, HobbyId, SyainId, "id", "syain_id")
+    val hobby2staff = ColArrow(hobby, HobbyId, StaffId, "id", "staff_id")
 
     val orderItem2order = 
 	  ColArrow(orderItem, OrderItemId, OrderId, "id", "order_id")
     val orderItem2item = 
 	  ColArrow(orderItem, OrderItemId, ItemId, "id", "item_id")
 	
-    val syain2dept = ColArrow(syain, SyainId, DeptId, "id", "dept_id")
+    val staff2dept = ColArrow(staff, StaffId, DeptId, "id", "dept_id")
 	
-    val syain2boss = ColArrow(syain,SyainId, SyainId, "id", "boss_id")
-    val syain2subordinates = ~syain2boss
+    val staff2boss = ColArrow(staff,StaffId, StaffId, "id", "boss_id")
+    val staff2subordinates = ~staff2boss
 
-    val order2staff = ColArrow(order,OrderId, SyainId, "id", "syain_id")
+    val order2staff = ColArrow(order,OrderId, StaffId, "id", "staff_id")
 
   }
   import ForeginArrows._
   object Dept extends forTableOf(Tables.dept){
     val Id = DeptId
     val Name = ColObject("name")
-    val syains = ~syain2dept
+    val staffs = ~staff2dept
   }
 
   object Order extends forTableOf(Tables.order){
@@ -80,27 +80,27 @@ object Mappers{
   }
 
   
-  object Syain extends forTableOf(Tables.syain){
-    import Tables.syainInfo
-    val Id = SyainId
+  object Staff extends forTableOf(Tables.staff){
+    import Tables.staffInfo
+    val Id = StaffId
 	
     val Name = ColObject("name")
     val Age = ColObject("age")
     val name = ColArrow(Id, Name, "id","name")
     val id2id = ColArrow(Id, Id, "id","id")
     val age = ColArrow(Id, Age, "id","age")
-    val dept = syain2dept
-    val info = ColArrow(syainInfo,Id, DeptId, "id", "info")
-    val hobbies = ~hobby2syain
-    val boss = syain2boss
-    val subordinates = syain2subordinates
+    val dept = staff2dept
+    val info = ColArrow(staffInfo,Id, DeptId, "id", "info")
+    val hobbies = ~hobby2staff
+    val boss = staff2boss
+    val subordinates = staff2subordinates
   }
   object Hobby extends forTableOf(Tables.hobby){
     val Id = HobbyId
-    val SyainId = TableObjects.SyainId
+    val StaffId = TableObjects.StaffId
     val Name = ColObject("name")
     val name = ColArrow(Id, Name, "id", "name")
-    val syain = hobby2syain
+    val staff = hobby2staff
   }
 }
 

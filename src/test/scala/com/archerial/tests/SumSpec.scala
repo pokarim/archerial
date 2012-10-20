@@ -38,13 +38,13 @@ class SumSpec extends Specification {
 	implicit val con = DriverManager.getConnection("jdbc:h2:mem:sumspec", "", "")
 	SampleData.createTables 
 	SampleData.insertSampleData
-	val boss = Syain.boss
+	val boss = Staff.boss
 	val sub = ~boss
-	val syains = AllOf(Syain.Id)
-	val name = Syain.name
+	val staffs = AllOf(Staff.Id)
+	val name = Staff.name
 	val supname = boss >>> name
 	val subname = sub >>> name
-	val syainId = Syain.Id.id
+	val staffId = Staff.Id.id
 	val isMikio = name =:= Const(Str("mikio"))
 	val isHokari = name =:= Const(Str("hokari"))
 	val onlyMikio = Filter(isMikio)
@@ -58,10 +58,10 @@ class SumSpec extends Specification {
 		  Order.orderItems >>> OrderItem.item >>> Item.name)}
 	  //pprn(sum1.eval())
 	  val exp = sum1.queryExp
-val exp_ = 	  	  (syains >>> 
-				    //Filter(syainId =:= Const(Int(2)))>>>
+val exp_ = 	  	  (staffs >>> 
+				    //Filter(staffId =:= Const(Int(2)))>>>
 				   Tuple(
-		syainId
+		staffId
 		//,name
 		//,boss >>> name
 		,boss >>> Filter(boss >>> name =:= name) >>> name

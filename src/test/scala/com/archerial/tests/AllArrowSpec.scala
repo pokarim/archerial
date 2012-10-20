@@ -39,32 +39,32 @@ class AllArrowSpec extends Specification {
 	SampleData.createTables 
 	SampleData.insertSampleData
 
-	val boss = Syain.boss
+	val boss = Staff.boss
 	val sub = ~boss
-	val syains = AllOf(Syain.Id)
-	val name = Syain.name
+	val staffs = AllOf(Staff.Id)
+	val name = Staff.name
 	val supname = boss >>> name
 	val subname = sub >>> name
-	val syainId = Syain.Id.id
+	val staffId = Staff.Id.id
 	val isMikio = name =:= Const(Str("mikio"))
 	val isHokari = name =:= Const(Str("hokari"))
 	val onlyMikio = Filter(isMikio)
 	val onlyHokari = Filter(isHokari)
 	"any directly" in {
 	  val a = {
-		syains >>> 
+		staffs >>> 
 		Filter(Any(sub >>> name  =:= Const(Str("hokari")))) >>>
-		Tuple(syainId,name)}.eval()
+		Tuple(staffId,name)}.eval()
 	  a.toSet === Set(
 		VTuple(VList(Int(1)),
 			   VList(Str("hokari"))))
 	}
 	"any tupled" in {
 	  val b = {
-	  syains >>> 
+	  staffs >>> 
 		Filter(name  =:= Const(Str("hokari")))>>>
 		Tuple(
-		  syainId,
+		  staffId,
 		  Filter(Any(sub >>> name  =:= Const(Str("hokari")))) >>> 		sub >>> name
 		)}
 	  b.eval().toSet === Set(
@@ -74,18 +74,18 @@ class AllArrowSpec extends Specification {
 	}
 	"any tupled 2" in {
 	  val b = {
-	  syains >>> 
+	  staffs >>> 
 		Filter(Any(NonNull(sub >>> sub >>> name)))  >>>
 		Tuple(
-		  syainId
+		  staffId
 		)}
 	  b.eval().toSet === Set(
 		VTuple(VList(Int(1))
 			 ))
 
 	  val b3 = {
-	  syains >>> Tuple(
-		syainId
+	  staffs >>> Tuple(
+		staffId
 		,Filter(NonNull(sub >>> sub >>> name))
 		,NonNull(sub >>> sub >>> name)
 		,Any(NonNull(sub >>> sub >>> name))
