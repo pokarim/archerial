@@ -69,6 +69,7 @@ object ColEvalTool{
 	  val r = for {
 		pv <- pvalues;
 		row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
+		if (row.d(table.pk).nonNull)
 		val v = row.d(colExp)
 		if v.nonNull}
 	  yield v
