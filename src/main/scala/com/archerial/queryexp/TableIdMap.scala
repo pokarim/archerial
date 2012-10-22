@@ -27,7 +27,9 @@ case class TableIdMap(roots:Set[TableExp], map: Map[TableExp,String], constMap: 
   def addKeyAlias(from:TableExp,to:TableExp) = {
 	copy(map=map.updated(to, map(from) ))
   }
-  def apply(x:TableExp):String = gets(x).get
+  def apply(x:TableExp):String = {
+	gets(x).get
+  }
   def gets(x:TableExp):Option[String] = 
   	map.get(x)
 

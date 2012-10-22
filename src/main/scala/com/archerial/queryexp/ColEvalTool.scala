@@ -46,11 +46,7 @@ object ColEvalTool{
 	  val pvals = Col(rootCol).eval(vcol,values,getter)
 	  val pcol2 = Col(rootCol).evalCol(vcol)
 	  (tree,pcol2,pvals)
-//(tree,vcol,values)
-
 	}
-	// pprn(getter.t2c2v2r(table).keys.toSet,(pcol.normalize) )
-	// pprn(pcol.tables.head)
 	val c2v2r = 
 	  if (getter.t2c2v2r(table).contains(pcol.normalize) 
 		  || pcol == UnitTable.pk)

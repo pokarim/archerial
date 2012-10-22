@@ -195,9 +195,6 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
 trait Columnable extends QueryExp{
   def root:TableExp
   def qexpCol = QExpCol(root,this)
-  // def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter): Seq[Value] = 	throw new java.lang.UnsupportedOperationException(
-  // 	  "Columnable().eval()")
-
   def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
   ColEvalTool.eval(qexpCol, root, vcol, values, getter)
   def row2value(row:Row ): Value = row.d(qexpCol)
@@ -212,15 +209,20 @@ case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
 
-case class SumQExp(keycol:Col,valcol:Col) extends Columnable{
+case class SumQExp(group:GroupByNode,valcol:Col) extends Columnable{
   val root:TableExp = //keycol.colNode.table
-	GroupByNode(keycol)
+	valcol.table
+	//GroupByNode(valcol.colNode.table,keycol)
+  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
+	val t = group.tableNode
+  ColEvalTool.eval(qexpCol, t, vcol, values, getter)
+  }
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
   def getSQL(map: TableIdMap):String =	{
 	"sum(%s)" format valcol.getSQL(map)
   }
   override def constants:Seq[ConstantQueryExp] = 
-	keycol.constants ++ valcol.constants
+	valcol.constants
 }
 
 

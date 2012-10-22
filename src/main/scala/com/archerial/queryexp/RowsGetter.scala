@@ -79,7 +79,7 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
   }
 
   def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R =
-	tree.getAllTableExps.foldLeft(Map(): T2C2V2R)(
+	tree.getAllTableExps.filter(!_.isGrouped).foldLeft(Map(): T2C2V2R)(
 	  (map : T2C2V2R, t : TableExp) =>
 	  getMapsC(tree, t,map,rows))
   def getMapsC(tree:TableTree,node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {

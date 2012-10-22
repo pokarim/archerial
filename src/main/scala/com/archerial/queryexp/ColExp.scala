@@ -17,6 +17,9 @@
 package com.archerial.queryexp
 import com.archerial._
 
+import com.pokarim.pprinter._
+import com.pokarim.pprinter.exts.ToDocImplicits._
+
 sealed trait ColExp {
   def normalize = this
   def constants:Seq[ConstantQueryExp] = Nil
@@ -24,6 +27,7 @@ sealed trait ColExp {
   def parse(x:Any):RawVal = x match {
 	case null => RawVal.Null
 	case x:Int => RawVal.Int(x)
+	case x:Long => RawVal.Long(x)
 	case x:String => RawVal.Str(x)
 	case x:Boolean => RawVal.Bool(x)
   }

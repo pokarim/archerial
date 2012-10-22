@@ -28,7 +28,17 @@ object RowMulFactor extends Enumeration {
   val Many, One, LtOne = Value
 }
 
+object TableNodeType extends Enumeration {
+  val Table, Where, GroupBy = Value
+}
+
 sealed trait TableExp {
+  def isGrouped:Boolean = false
+  def getTableType:TableNodeType.Value = this match {
+	case _:WhereNode => TableNodeType.Where
+	case _:GroupByNode => TableNodeType.GroupBy
+	case _ => TableNodeType.Table
+  }
   def directParent:Option[TableExp]
   def dependentParents:List[TableExp] = 
 	argCols.flatMap(_.tables)
@@ -101,9 +111,12 @@ case class TableNode(table: Table) extends TableExp{
 	"%s as %s" format(table.name, map(this))
 }
 
-case class GroupByNode(key:Col) extends TableExp{
+case class GroupByNode(tableNode:TableExp,key:Col) extends TableExp{
+  override def isGrouped:Boolean = true
+  override def getColsRefTarget:TableExp = tableNode
+
   def directParent:Option[TableExp] = Some(UnitTable)
-  def argCols:List[ColExp] = List(UnitTable.primaryKeyCol)
+  def argCols:List[ColExp] = List(key.colNode)
 
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
@@ -114,10 +127,12 @@ case class GroupByNode(key:Col) extends TableExp{
 	key.colNode.table.primaryKeyCol
 
   def getSQLNonRoot(map: TableIdMap):String = 
-	"group by %s" format(map(this))
+	" group by %s" format(key.getSQL(map))
 }
 
 case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
+  override def isGrouped:Boolean = tableNode.isGrouped
+
   def directParent:Option[TableExp] = Some(tableNode)
   def argCols:List[ColExp] = 
 	(tableNode.primaryKeyCol :: cond.getDependentCol.toList).distinct
@@ -160,6 +175,8 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
 }
 
 case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableExp{
+  override def isGrouped:Boolean = leftcol.table.isGrouped
+
   override def filterRows(rows:Seq[Row]):Seq[Row] = 
 	rows.filter{_.d(leftcol.colNode).nonNull}
 

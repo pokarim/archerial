@@ -34,7 +34,7 @@ object TableHashTool {
 }
 object ToDocImplicits{
   implicit def fromSelectGen(x:SelectGen):DOC = x match {
-	case SelectGen(tree, colExps, colExps4Row, tableExps,whereCond,_,_) => 
+	case SelectGen(tree, colExps, colExps4Row, tableExps,whereCond,_,_,_) => 
 	  labeledRBracketWC(
 		"SelectGen",
 		List[DOC](tree,tableExps(0).altRoot,colExps,colExps4Row))
@@ -57,6 +57,11 @@ object ToDocImplicits{
 			c.rawVal))
 	case NTuple(exps) =>
 	  labeledRBracketWC("NTuple", exps.map(x => x:DOC))
+	case SumQExp(group,valcol) =>
+	  labeledRBracketWC(
+		"SumQExp", 
+		List[DOC](hashCodeStr(group),valcol))
+
 	case NamedTupleQExp(keycol,exps) =>
 	  labeledRBracketWC(
 		"NamedTupleQExp",
@@ -95,6 +100,10 @@ object FromTableExp{
 	  case JoinNode(rt,lc,rc) =>
 		labeledRBracketWC("JoinNode", List[DOC](
 		  hashCodeStr(x),lc,rt.name ++ "." ++ rc.name))
+
+	  case GroupByNode(t,key) =>
+		labeledRBracketWC("GroupByNode", List[DOC](
+		  hashCodeStr(x),hashCodeStr(t),key))
 	  case WhereNode(t, cond) =>
 		labeledRBracketWC("WhereNode", List[DOC](hashCodeStr(x),hashCodeStr(t),cond:DOC))
 	}

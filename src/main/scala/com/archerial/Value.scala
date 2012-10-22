@@ -43,6 +43,10 @@ object RawVal{
 	def toSQLString = value.toString
     def toParameterValue:ParameterValue[scala.Int] = anorm.toParameterValue(value)
   }
+  case class Long (value: scala.Long) extends Type {
+	def toSQLString = value.toString
+    def toParameterValue:ParameterValue[scala.Long] = anorm.toParameterValue(value)
+  }
   case class Bool(value: Boolean) extends Type{
 	def toSQLString = value.toString
 	def toParameterValue:ParameterValue[scala.Boolean] = anorm.toParameterValue(value)

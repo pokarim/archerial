@@ -49,7 +49,9 @@ object QueryExpTools{
   def getTableExps(self:Either[QueryExp,TableExp]):List[TableExp] = 
 	self.fold((_)=>Nil,List(_)) ++
   directParents(self).flatMap{
-	case r if r == self=> Nil//List(t)
+	case r if r == self=> Nil//List(t) 
+	case Left(x:Columnable) => //List(x.root) :: 
+	  getTableExps(Right(x.root))
 	case x => 
 	getTableExps(x).distinct}
 
@@ -71,17 +73,26 @@ object QueryExpTools{
 
   def directColNodes(self:QueryExp):List[ColExp] = self match {
 	case x:Columnable => List(x.qexpCol)
-	case Col(colNode) => List(colNode)
+	case Col(colNode) if !colNode.table.isGrouped
+	=> List(colNode)
 	case _ => Nil
   }
 
   def directParents(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
+	case Left(SumQExp(group,value)) => 
+	  Right(group) :: directParents(Left(value))
+	
 	case Left(n@NamedTupleQExp(key,exps)) => 
 	  Left(key) :: n.valExps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Left(cond),Right(tableNode))
+
+	case Right(GroupByNode(tableNode,key)) => 
+	  List(Left(key))
+//	  List(Right(tableNode))
+
 	case Left(ConstCol(ConstantColExp(t,value))) => 
 	  List(Left(Col(t.pk)),Right(t))
 	case Right(JoinNode(_,leftcol,_)) => List(Left(leftcol))
@@ -95,10 +106,17 @@ object QueryExpTools{
   def directParentsOM(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
+	case Left(SumQExp(group,value)) => 
+	  Right(group) :: directParents(Left(value))
 	case Left(n@NamedTupleQExp(key,exps)) => 
 	  Left(key) :: n.valExps.map(Left(_))
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Right(tableNode))
+
+	case Right(GroupByNode(tableNode,key)) => 
+	  //List(Right(tableNode))
+	  List(Left(key))// ++ 
+
 	case Left(ConstCol(ConstantColExp(t,value))) => 
 	  List(Right(t))
 	case Right(JoinNode(_,leftcol,_)) => List(Right(leftcol.table))

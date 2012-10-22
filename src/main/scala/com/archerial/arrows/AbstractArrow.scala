@@ -84,10 +84,12 @@ trait AbstractArrow {
 	}
 
 	case (pred  , Sum(col)) => {
-	  val (obj:ColObject, keycol@Col(_)) = pred
-	  val (_, valcol@Col(_) ) = col(pred)
-	  IntObject -> queryexp.SumQExp(
-		keycol,valcol)
+	  val (obj:ColObject, 
+		   keycol@Col(ColNode(cTable, cCol))) = pred
+	  val g = GroupByNode(cTable,keycol)
+	  val inner = Col(ColNode(g,cCol))
+	  val (_, valcol@Col(_) ) = col(obj -> inner)
+	  IntObject -> queryexp.SumQExp(g,valcol)
 	}
 
 	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {
