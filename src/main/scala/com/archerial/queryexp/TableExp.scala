@@ -25,7 +25,7 @@ object Many extends Quantity
 object One extends Quantity
 
 object RowMulFactor extends Enumeration {
-  val Many, One, LtOne = Value
+  val Many, One, LtOne, Group = Value
 }
 
 object TableNodeType extends Enumeration {
@@ -33,7 +33,7 @@ object TableNodeType extends Enumeration {
 }
 
 sealed trait TableExp {
-  def isGrouped:Boolean = false
+  def isGrouped:Boolean// = false
   def getTableType:TableNodeType.Value = this match {
 	case _:WhereNode => TableNodeType.Where
 	case _:GroupByNode => TableNodeType.GroupBy
@@ -81,6 +81,7 @@ sealed trait TableExp {
 }
 
 object UnitTable extends TableExp{
+  def isGrouped:Boolean = false
   def directParent:Option[TableExp] = None
   def argCols:List[ColExp] = List(primaryKeyCol)
   def getSQLNonRoot(map: TableIdMap):String =
@@ -95,7 +96,7 @@ object UnitTable extends TableExp{
   val UnitColExp = primaryKeyCol
 }
 import UnitTable.UnitColExp
-case class TableNode(table: Table) extends TableExp{
+case class TableNode(table: Table,isGrouped:Boolean=false) extends TableExp{
   def directParent:Option[TableExp] = Some(UnitTable)
   def argCols:List[ColExp] = List(UnitTable.primaryKeyCol)
 
@@ -112,6 +113,8 @@ case class TableNode(table: Table) extends TableExp{
 }
 
 case class GroupByNode(tableNode:TableExp,key:Col) extends TableExp{
+  def rowMulFactor:RowMulFactor.Value = RowMulFactor.Group
+
   override def isGrouped:Boolean = true
   override def getColsRefTarget:TableExp = tableNode
 
@@ -122,7 +125,6 @@ case class GroupByNode(tableNode:TableExp,key:Col) extends TableExp{
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
   
   def altRoot:Table = key.colNode.table.altRoot
-  def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
   def primaryKeyCol:ColNode = 
 	key.colNode.table.primaryKeyCol
 

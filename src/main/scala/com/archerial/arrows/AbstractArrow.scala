@@ -46,6 +46,13 @@ trait AbstractArrow {
 	case ((UnitObject,UnitCol), AllOf(obj)) => {
 	  (obj, Col(obj.getColNode()))
 	}
+	case ((_,_),AllOf(obj))=>{
+	  UnitObject
+	  val colNode = obj.getColNode().copy(
+		table=obj.getColNode().table.asInstanceOf[TableNode].copy(
+		  isGrouped=true))
+	  obj -> Col(colNode)
+	}
 	case (pred, self: Identity) => {
 	  self match{
 	  case Identity(obj@ColObject(table,column)) =>{
@@ -83,13 +90,19 @@ trait AbstractArrow {
 	  (BoolObject,Exists(cTable, condExp))
 	}
 
+	case (pred@(UnitObject,_)  , Sum(col)) => {
+	  val g = GroupByNode(UnitTable,Col(UnitTable.pk))
+	  val inner = Col(ColNode(g,UnitTable.pk.column))
+	  val (ro, rc:Col) = col(UnitObject -> inner)
+	  ro -> queryexp.SumQExp(UnitTable, rc)
+	}
 	case (pred  , Sum(col)) => {
 	  val (obj:ColObject, 
 		   keycol@Col(ColNode(cTable, cCol))) = pred
 	  val g = GroupByNode(cTable,keycol)
 	  val inner = Col(ColNode(g,cCol))
 	  val (_, valcol@Col(_) ) = col(obj -> inner)
-	  IntObject -> queryexp.SumQExp(g,valcol)
+	  IntObject -> queryexp.SumQExp(cTable,valcol)
 	}
 
 	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {
@@ -114,7 +127,6 @@ trait AbstractArrow {
 	  NamedTupleQExp(col
 		,xs.map{case (x,y,_)=>(x,y)})
 	}
-
   }
 
   def =:=(right:Arrow) = {new OpArrows.=:=(this,right)}

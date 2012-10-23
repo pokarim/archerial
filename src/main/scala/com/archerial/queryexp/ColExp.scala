@@ -30,6 +30,8 @@ sealed trait ColExp {
 	case x:Long => RawVal.Long(x)
 	case x:String => RawVal.Str(x)
 	case x:Boolean => RawVal.Bool(x)
+case x:java.math.BigDecimal => 
+  RawVal.Long(scala.math.BigDecimal(x).toLong)
   }
   def parse2Val(x:Any):Value = parse(x) match{
 	case x: RawVal => Val(x,1)

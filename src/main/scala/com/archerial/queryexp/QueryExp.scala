@@ -209,13 +209,14 @@ case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
 
-case class SumQExp(group:GroupByNode,valcol:Col) extends Columnable{
+case class SumQExp(table:TableExp,valcol:Col) extends Columnable{
   val root:TableExp = //keycol.colNode.table
 	valcol.table
 	//GroupByNode(valcol.colNode.table,keycol)
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
-	val t = group.tableNode
-  ColEvalTool.eval(qexpCol, t, vcol, values, getter)
+	//val t = group.tableNode
+	val t = table
+	ColEvalTool.eval(qexpCol, t, vcol, values, getter)
   }
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
   def getSQL(map: TableIdMap):String =	{

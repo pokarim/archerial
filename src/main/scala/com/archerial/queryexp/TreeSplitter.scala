@@ -28,7 +28,7 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 
 case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeRel[Tbx]){
 
-  import RowMulFactor.{LtOne,One,Many}
+  import RowMulFactor.{LtOne,One,Many,Group}
 
   def splitDirectChildren(root:Tbx, directChildren:Seq[Tbx], isDirect:Boolean):State[TbxSet, (TTree, TTrees)] = {
 	val mul2nodes = groupTuples(
@@ -36,9 +36,10 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	val many = mul2nodes.getOrElse(RowMulFactor.Many,Nil)
 	val one = mul2nodes.getOrElse(RowMulFactor.One,Nil)
 	val lt1 = mul2nodes.getOrElse(RowMulFactor.LtOne,Nil)
-	
-	for {main <- forS(many.headOption.toList ++ one)(apply(_,isDirect))
-		 other <- forS(many.drop(1) ++ lt1)(apply(_,true))}
+	val grp = mul2nodes.getOrElse(RowMulFactor.Group,Nil)
+	val grpMany = grp ++ many
+	for {main <- forS(grpMany.headOption.toList ++ one)(apply(_,isDirect))
+		 other <- forS(grpMany.drop(1) ++ lt1)(apply(_,true))}
 	yield (TableTree(root,main.map(_._1).toList), 
 		   main.flatMap(_._2) ++ 
 		   other.map(_._1) ++ other.flatMap(_._2))
@@ -58,10 +59,17 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	} else splitDirectChildren(root, directChildren,isDirect && isEmp)
 
   }
-
+  
+  def oneTree(root:Tbx):TableTree = {
+	val children = table2children(root)
+	TableTree(root,children.map(oneTree(_)).toList)
+  }
+  //(TableTree(root,xs.map(_._1).toList), xs.flatMap(_._2))
   def apply(root:Tbx, isDirect:Boolean=true):State[TbxSet, (TTree, TTrees)] = {
 	val children = table2children(root)
-	if (children.isEmpty){
+	if (root.rowMulFactor == RowMulFactor.Group){
+	  for (_ <- init) yield (oneTree(root),Nil)
+	}else if (children.isEmpty){
 	  for {_ <- modify[TbxSet](_ + root)}
 	  yield (TableTree(root,Nil),Nil)
 	} else for {

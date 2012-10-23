@@ -25,11 +25,17 @@ trait Metadata extends {
   def create_all()(implicit connection: java.sql.Connection) = 
     for (table <- all)
 	  SQL(table.createTableStr).execute()
+  def drop_all()(implicit connection: java.sql.Connection) = 
+    for (table <- all)
+	  SQL(table.dropTableIfExistsStr).execute()
 }
 
 object DDLUtil{
   def createTableStr(tablename:String, coldefs:List[String]):String =     "create table %s (%s);" format(
       tablename,  "\n  " + coldefs.reduceLeft(_ + ",\n  " + _ ))
+
+  def dropTableIfExistsStr(tablename:String):String =
+    "drop table if exists %s;" format(tablename)
 }
 
 case class ColType(str:String, isPrimaryKey:Boolean =false, isAutoInc: Boolean = false, isUniqueKey: Boolean =false){
@@ -71,6 +77,7 @@ case class Table(val name:String, var columns:List[Column])
 	  SQL(createTableStr).execute()
 
   def createTableStr = DDLUtil.createTableStr(name, columns.map(_.getDef))
+  def dropTableIfExistsStr = DDLUtil.dropTableIfExistsStr(name)
   def insertSQL(xs: List[(String,RawVal)]): anorm.SimpleSql[anorm.Row] = {
     val s = """insert into %s (%s) values (%s)  ;""" format(
       name,
