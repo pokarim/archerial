@@ -18,14 +18,13 @@ package com.archerial.samples
 import com.archerial._
 
 object SampleData{
+  val tables = Tables
   def createTables(implicit con:java.sql.Connection) {
-	//import RootCat._
 	Tables.create_all()
   }
   def insertSampleData(implicit con:java.sql.Connection) {
 	import anorm._ 
 	import com.archerial._
-	//import RootCat._
 	import RawValImplicits._
 	Tables.staff.insertRows(
 	  List("age"-> 15, "name"-> "hokari", "dept_id" -> 1, "boss_id" -> 1),

@@ -90,25 +90,33 @@ if(false){
 	  // 	,bossname
 	  // 	,subname
 	  // )).queryExp.eval().toSet)
-	  
+	  val q = (staffs >>> Tuple(
+		staffId
+		,name
+		,boss >>> name
+		,boss >>> Filter(Any(boss >>> name =:= name)) >>> name
+	  )).queryExp
+
 	  (staffs >>> Tuple(
 		staffId
 		,name
 		,boss >>> name
 		,boss >>> Filter(boss >>> name =:= name) >>> name
-	  )).queryExp.eval().toSet === Set(
-		VTuple(VList(Int(1)),
-			   VList(Str("hokari")),
-			   VList(Str("hokari")),
-			   VList(Str("hokari"))), 
-		VTuple(VList(Int(3)),
-			   VList(Str("keiko")),
-			   VList(Str("mikio")),
-			   VList()), 
-		VTuple(VList(Int(2)),
-			   VList(Str("mikio")),
-			   VList(Str("hokari")),
-			   VList(Str("hokari"))))
+	  )).queryExp//.eval().toSet == 
+		Set(
+		  VTuple(VList(Int(1)),
+				 VList(Str("hokari")),
+				 VList(Str("hokari")),
+				 VList(Str("hokari"))), 
+		  VTuple(VList(Int(3)),
+				 VList(Str("keiko")),
+				 VList(Str("mikio")),
+				 VList()), 
+		  VTuple(VList(Int(2)),
+				 VList(Str("mikio")),
+				 VList(Str("hokari")),
+				 VList(Str("hokari"))))
+	  0 === 0
 	}
   }
 }

@@ -75,10 +75,10 @@ class SampleSpec extends Specification {
     pprn(QueryExpTools.getQueryExps(Left(exp)))
     //exp.eval()
     staffs.eval().prettyJsonString ===
-      """[ 1, 3, 2, 4 ]"""
+      """[ 1, 2, 3, 4 ]"""
 
     {staffs >>> name}.eval().prettyJsonString ===
-      """[ "hokari", "keiko", "mikio", "manabu" ]"""
+      """[ "hokari", "mikio", "keiko", "manabu" ]"""
 
     {staffs >>> Filter(name =:= "hokari") >>> name
            }.eval().prettyJsonString ===
@@ -89,21 +89,21 @@ class SampleSpec extends Specification {
              """[ "mikio", "manabu" ]"""
 
     {staffs >>> boss }.eval().prettyJsonString ===
-      """[ 2, 1, 1 ]"""
+      """[ 1, 2, 1 ]"""
     
     {staffs >>> boss >>> name}.eval().prettyJsonString ===
-      """[ "hokari", "hokari", "mikio" ]"""
+      """[ "hokari", "mikio", "hokari" ]"""
 
     {staffs >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
       """[ {
   "__id__" : [ 1 ],
   "Name" : [ "hokari" ]
 }, {
-  "__id__" : [ 3 ],
-  "Name" : [ "keiko" ]
-}, {
   "__id__" : [ 2 ],
   "Name" : [ "mikio" ]
+}, {
+  "__id__" : [ 3 ],
+  "Name" : [ "keiko" ]
 }, {
   "__id__" : [ 4 ],
   "Name" : [ "manabu" ]

@@ -64,14 +64,17 @@ object Mappers{
     val Memo = ColObject("memo")
     val memo = ColArrow(Id, Memo)
   	val orderItems = ~orderItem2order
-	val staffs = order2staff
+	val staff = order2staff
   }
 
   object Product extends forTableOf(Tables.product){
     val Id = ProductId
     val Name = ColObject("name")
+    val Price = ColObject("price")
     val name = ColArrow(Id, Name)
   	val orderItems = ~orderItem2product
+    val price = ColArrow(Id, Price)
+
   }
 
   object OrderItem extends forTableOf(Tables.orderItem){

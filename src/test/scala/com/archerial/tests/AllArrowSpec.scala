@@ -35,7 +35,7 @@ class AllArrowSpec extends Specification {
 
   "The 'Hello world' string" should {
 	val h2driver = Class.forName("org.h2.Driver")
-	implicit val con = DriverManager.getConnection("jdbc:h2:mem:harrowspec2", "", "")
+	implicit val con = DriverManager.getConnection("jdbc:h2:mem:hallarrowspec", "", "")
 	SampleData.createTables 
 	SampleData.insertSampleData
 
@@ -50,6 +50,7 @@ class AllArrowSpec extends Specification {
 	val isHokari = name =:= Const(Str("hokari"))
 	val onlyMikio = Filter(isMikio)
 	val onlyHokari = Filter(isHokari)
+	if(false){
 	"any directly" in {
 	  val a = {
 		staffs >>> 
@@ -82,16 +83,19 @@ class AllArrowSpec extends Specification {
 	  b.eval().toSet === Set(
 		VTuple(VList(Int(1))
 			 ))
-
+	}
+  }
+	"any tupled 3" in {
 	  val b3 = {
 	  staffs >>> Tuple(
 		staffId
-		,Filter(NonNull(sub >>> sub >>> name))
-		,NonNull(sub >>> sub >>> name)
-		,Any(NonNull(sub >>> sub >>> name))
+		//,Filter(NonNull(sub >>> sub >>> name))
+		,NonNull(sub)
+		//,Any(NonNull(sub >>> sub >>> name))
 		)
 	  }
-	  b3.eval().toSet === Set(
+	  pprn(b3.eval().toSet )
+	  Set(
 		VTuple(VList(Int(1)),
 			   VList(Int(1)),
 			   VList(Bool(true)),
@@ -110,6 +114,28 @@ class AllArrowSpec extends Specification {
 	  )
 
 	  val exp = b3.queryExp
+	  if(true){
+		//val trees = SimpleGenTrees.gen(exp)
+		val trees = SimpleGenTrees.gen(exp)
+		SimpleGenTrees.splitToPieces(exp)
+		val tree= trees.head
+		pprn("trees:",trees)
+
+		val colInfo = TreeColInfo(
+		  exp.col2table, //OM
+		  trees)
+		val getter = RowsGetter(colInfo)
+		pprn(exp)
+		//pprn(exp.tableNodeList)
+		pprn(getter.t2c2v2r)
+		
+		val vs = exp.eval(
+	  	  UnitTable.pk,
+	  	  List(UnitValue),
+	  	  getter)
+		 pprn(vs)
+		// exp.eval()
+	  }
 	  0 === 0
 	}
   }
