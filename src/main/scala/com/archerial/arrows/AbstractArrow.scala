@@ -78,10 +78,28 @@ trait AbstractArrow {
 	  (arr.getObject, ConstCol(ConstantColExp(col.colNode.table, x)))
 	}
 
-	case (pred  , Filter(cond)) => {
+	case (pred@(obj,Col(ColNode(_,_)))  , Filter(cond)) => {
+	  val Col(ColNode(t1,_)) = pred._2
 	  val pred2@(obj:ColObject, Col(ColNode(cTable, cCol))) = pred._1.id(pred)
-	  val (_,condExp) = cond(pred2)
-	  (obj,Col(WhereNode(cTable, condExp), obj.column ))
+	  cTable match {
+		case x:JoinNode if false => {
+		  val (_, condExp) = cond(pred2)
+		  val condf = (node:JoinNode) =>
+			cond(obj,Col(ColNode(node,cCol)))._2
+		  val j = x.copy(condf=Some(condf))
+		  import QueryExpTools.getTableExps
+		  val trunk = (j :: getTableExps(cTable)).toSet
+		  val branch = getTableExps(condf(j)).filter(!trunk(_))
+		  if (branch.nonEmpty)
+			Filter(Any(cond)).apply(pred)
+		  else
+			(obj,Col(j, obj.column))
+		}
+		case x =>{
+		  val (_,condExp) = cond(pred2)
+		  (obj,Col(WhereNode(cTable, condExp), obj.column ))
+		}
+	  }
 	}
 
 	case (pred  , Any(cond)) => {

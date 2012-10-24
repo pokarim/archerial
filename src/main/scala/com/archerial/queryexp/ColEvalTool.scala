@@ -27,7 +27,10 @@ object ColEvalTool{
 	val tree = getter.colInfo.table_tree.one(table)
 	val vtrees = getter.colInfo.table_tree(vcol.tables.head)
 	val (ptree,pcol,pvalues) =
-	if (!vtrees.contains(tree) ){
+	if (false && !vtrees.contains(tree) ){
+	  val ptree_ = 
+		getter.colInfo.table_tree(
+		  tree.node.directParent.get)
 	  val ptree = 
 		getter.colInfo.table_tree.one(
 		  tree.node.directParent.get)
@@ -37,12 +40,19 @@ object ColEvalTool{
 	  val pvals = Col(pcol).eval(vcol,values,getter)
 	  val pcol2 = Col(pcol).evalCol(vcol)
 	  (ptree,pcol2,pvals)
-	}else if (getter.t2c2v2r(table).contains(vcol.normalize) 
-		  || vcol == UnitTable.pk){
+	}
+	else if (
+	  getter.t2c2v2r(table).contains(vcol.normalize) ||
+	  colExp == UnitTable.pk || 
+	  colExp.tables.head.rootCol.tables.head ==UnitTable&&
+	  (vcol == UnitTable.pk)
+	){
 	  (tree,vcol,values)
-	}else{
+	}
+	else{
 	  val rootCol = 
 		colExp.tables.head.rootCol.asInstanceOf[ColNode]
+	  assert(rootCol != colExp)
 	  val pvals = Col(rootCol).eval(vcol,values,getter)
 	  val pcol2 = Col(rootCol).evalCol(vcol)
 	  (tree,pcol2,pvals)
@@ -55,7 +65,7 @@ object ColEvalTool{
 		getter.t2c2v2r(pcol.tables.head)
 	  }
 	
-	if (pcol == UnitTable.pk){
+	val r = if (false && pcol == UnitTable.pk){
 	  if(colExp ==table.pk){
 		c2v2r(colExp.normalize).keys.toSeq.filter(_.nonNull)
 	  }else{
@@ -71,6 +81,7 @@ object ColEvalTool{
 	  yield v
 	  r
 	}
+	r
   }
 }
 

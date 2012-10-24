@@ -176,7 +176,7 @@ case class WhereNode(tableNode: TableExp, cond :QueryExp) extends TableExp{
   }
 }
 
-case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableExp{
+case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column, condf:Option[JoinNode => QueryExp]=None) extends TableExp{
   override def isGrouped:Boolean = leftcol.table.isGrouped
 
   override def filterRows(rows:Seq[Row]):Seq[Row] = 
@@ -194,12 +194,15 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column) extends TableEx
 	if (rightcolumn.isUnique) RowMulFactor.One
 	else RowMulFactor.Many
   def rightcol = ColNode(this, rightcolumn)
-
+  def cond:Option[QueryExp] = condf.map(_(this))
   def getSQLNonRoot(map: TableIdMap):String ={
 	val l = leftcol.getSQL(map)
 	val r = rightcol.getSQL(map)
-	"left join %s as %s on %s = %s" format(
-	  right.name, map(this), l,r)}
+	val condStr = (for (q <- cond) yield {
+	  " and %s" format q.getSQL(map)
+	}).getOrElse("")
+	"left join %s as %s on %s = %s%s" format(
+	  right.name, map(this), l,r,condStr)}
 
   def altRoot = right//TableNode(right)
   def primaryKeyCol:ColNode = ColNode(this,right.primaryKey)

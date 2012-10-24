@@ -30,9 +30,13 @@ object QueryExpTools{
 	case Left(qs) => qs.flatMap((x)=>getQueryExps(Left(x)))
 	case Right(ts) => ts.flatMap((x)=>getQueryExps(Right(x)))}
 
-  def getQueryExps(self:Either[QueryExp,TableExp]):List[QueryExp] = {
-	self.fold(List(_),(_)=>Nil) ++
-	directParents(self).flatMap(getQueryExps)
+  def getQueryExps(self:Either[QueryExp,TableExp],pot:Set[Either[QueryExp,TableExp]]=Set()):List[QueryExp] = {
+	if (pot(self)) Nil
+	else{
+	  val pot2 = pot + self
+	  self.fold(List(_),(_)=>Nil) ++
+	  directParents(self).flatMap(getQueryExps(_,pot2))
+	}
   }
 
   def getQueryExpsOM(self:Either[QueryExp,TableExp]):List[QueryExp] = {
@@ -46,14 +50,20 @@ object QueryExpTools{
   def getTableExps(self:TableExp):List[TableExp] = 
 	getTableExps(Right(self)).reverse.distinct
 
-  def getTableExps(self:Either[QueryExp,TableExp]):List[TableExp] = 
-	self.fold((_)=>Nil,List(_)) ++
-  directParents(self).flatMap{
-	case r if r == self=> Nil//List(t) 
-	case Left(x:Columnable) => //List(x.root) :: 
-	  getTableExps(Right(x.root))
-	case x => 
-	getTableExps(x).distinct}
+  def getTableExps(self:Either[QueryExp,TableExp],pot:Set[TableExp]=Set()):List[TableExp] = {
+	if (self.fold((_)=>false,pot(_)))
+	  Nil
+	else{
+	  val pot2 = self.fold((_)=>pot,(t)=> pot + t)
+	  self.fold((_)=>Nil,List(_)) ++
+	  directParents(self).flatMap{
+		case r if r == self=> Nil
+		case Left(x:Columnable) =>
+		  getTableExps(Right(x.root),pot2)
+		case x => 
+		  getTableExps(x,pot2).distinct}
+	}
+  }
 
   def colNodeList(self:QueryExp):Seq[ColExp] = self match {
 	case x:Columnable => List(x.qexpCol)
@@ -86,6 +96,7 @@ object QueryExpTools{
 	
 	case Left(n@NamedTupleQExp(key,exps)) => 
 	  Left(key) :: n.valExps.map(Left(_))
+
 	case Right(WhereNode(tableNode,cond)) => 
 	  List(Left(cond),Right(tableNode))
 
@@ -95,7 +106,10 @@ object QueryExpTools{
 
 	case Left(ConstCol(ConstantColExp(t,value))) => 
 	  List(Left(Col(t.pk)),Right(t))
-	case Right(JoinNode(_,leftcol,_)) => List(Left(leftcol))
+	case Right(j@JoinNode(_,leftcol,_,_)) => 
+	  j.cond.map(Left(_)).toList ++ 
+	  List(Left(leftcol))
+
 	case Left(Col(colNode)) => 
 	  List(Right(colNode.table))
 	case Left(NonNullQExp(_,Col(colNode))) => 
@@ -119,7 +133,7 @@ object QueryExpTools{
 
 	case Left(ConstCol(ConstantColExp(t,value))) => 
 	  List(Right(t))
-	case Right(JoinNode(_,leftcol,_)) => List(Right(leftcol.table))
+	case Right(JoinNode(_,leftcol,_,_)) => List(Right(leftcol.table))
 	case Left(Col(colNode)) => List(Right(colNode.table))
 	case Left(NonNullQExp(_,Col(colNode))) => 
 	  List(Right(colNode.table))

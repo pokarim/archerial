@@ -97,7 +97,7 @@ object FromTableExp{
 		TEXT("UnitTable")
 	  case TableNode(table,_) =>
 		labeledRBracketWC("TableNode", List[DOC](hashCodeStr(x),table))
-	  case JoinNode(rt,lc,rc) =>
+	  case JoinNode(rt,lc,rc,_) =>
 		labeledRBracketWC("JoinNode", List[DOC](
 		  hashCodeStr(x),lc,rt.name ++ "." ++ rc.name))
 
