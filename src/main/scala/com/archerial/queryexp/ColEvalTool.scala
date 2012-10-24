@@ -24,68 +24,27 @@ import scala.collection.immutable
 
 object ColEvalTool{
   def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val tree = getter.colInfo.table_tree.one(table)
-	val vtrees = getter.colInfo.table_tree(vcol.tables.head)
-	val (ptree,pcol,pvalues) =
-	if (false && !vtrees.contains(tree) ){
-	  val ptree_ = 
-		getter.colInfo.table_tree(
-		  tree.node.directParent.get)
-	  val ptree = 
-		getter.colInfo.table_tree.one(
-		  tree.node.directParent.get)
-	  val pcol = tree.node.rootCol.asInstanceOf[ColNode]//TODO
-	  val ptree2 = getter.colInfo.table_tree.one(pcol.tables.head)
-	  assert(ptree == ptree2,"ptree == ptree2")
-	  val pvals = Col(pcol).eval(vcol,values,getter)
-	  val pcol2 = Col(pcol).evalCol(vcol)
-	  (ptree,pcol2,pvals)
-	}
-	else if (
-	  getter.t2c2v2r(table).contains(vcol.normalize) ||
-	  colExp == UnitTable.pk || 
-	  colExp.tables.head.rootCol.tables.head ==UnitTable&&
-	  (vcol == UnitTable.pk)
-	){
-	  (tree,vcol,values)
-	}
-	else{
-	  val rootCol = 
-		colExp.tables.head.rootCol.asInstanceOf[ColNode]
-	  assert(rootCol != colExp)
-	  val pvals = Col(rootCol).eval(vcol,values,getter)
-	  val pcol2 = Col(rootCol).evalCol(vcol)
-	  (tree,pcol2,pvals)
-	}
-	val c2v2r = 
-	  if (getter.t2c2v2r(table).contains(pcol.normalize) 
-		  || pcol == UnitTable.pk)
-		getter.t2c2v2r(table)
+	val (pcol,pvalues) =
+	  if (colExp == UnitTable.pk  ||
+		getter.t2c2v2r(table).contains(vcol.normalize)
+		) (vcol,values)
 	  else{
-		getter.t2c2v2r(pcol.tables.head)
+		val rootCol = 
+		  colExp.tables.head.rootCol.asInstanceOf[ColNode]
+		assert(rootCol != colExp)
+		val pvals = Col(rootCol).eval(vcol,values,getter)
+		val pcol2 = Col(rootCol).evalCol(vcol)
+		(pcol2,pvals)
 	  }
-	
-	val r = if (false && pcol == UnitTable.pk){
-	  if(colExp ==table.pk){
-		c2v2r(colExp.normalize).keys.toSeq.filter(_.nonNull)
-	  }else{
-		c2v2r(table.pk.normalize).values.toSeq.flatMap(_.map(_.d(colExp))).filter(_.nonNull)
-	  }
-	} else {
-	  val r = for {
-		pv <- pvalues;
-		row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
-		if (row.d(table.pk).nonNull)
-		val v = row.d(colExp)
-		if v.nonNull}
-	  yield v
-	  r
-	}
-	r
+	val c2v2r = getter.t2c2v2r(table)
+	for {pv <- pvalues
+		 row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
+		 if (row.d(table.pk).nonNull)
+		   val v = row.d(colExp)
+		 if v.nonNull}
+	yield v
   }
 }
-
-
 
 trait TupleExpBase {
   def row2value(row:Row ): Value =
