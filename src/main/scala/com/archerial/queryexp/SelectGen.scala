@@ -121,9 +121,7 @@ object SelectGen {
 	 ).distinct.toList
 	SelectGen(rootTableExp, 
 			  normalCols,
-		   // (normalCols ++ optCols.map(_._2)),
-		   // (normalCols ++ optCols.map(_._1)),
-		   tableList,whereList.map(_.cond),whereList,groupList,outerTableIdMap) 
+			  tableList,whereList.map(_.cond),whereList,groupList,outerTableIdMap) 
   }
 
 
