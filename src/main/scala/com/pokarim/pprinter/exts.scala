@@ -34,10 +34,10 @@ object TableHashTool {
 }
 object ToDocImplicits{
   implicit def fromSelectGen(x:SelectGen):DOC = x match {
-	case SelectGen(tree, colExps, colExps4Row, tableExps,whereCond,_,_,_) => 
+	case SelectGen(tree, colExps, tableExps,whereCond,_,_,_) => 
 	  labeledRBracketWC(
 		"SelectGen",
-		List[DOC](tree,tableExps(0).altRoot,colExps,colExps4Row))
+		List[DOC](tree,tableExps(0).altRoot,colExps))
   }
 
   implicit def fromQueryExp(x:QueryExp):DOC = x match {
@@ -46,9 +46,6 @@ object ToDocImplicits{
 	  	  labeledRBracketWC("Exists", List[DOC](ctable,cond))
 	case NonNullQExp(ctable,cond) =>
 	  	  labeledRBracketWC("NonNullQExp", List[DOC](ctable,cond))
-	// case AnyQExp(cond) =>
-	//   labeledRBracketWC("AnyQExp", List[DOC](cond))
-	  
 	case ConstantExp(rawVal) => 
 	  	  labeledRBracketWC("NamedTupleQExp", List[DOC](rawVal))
 	case c: ConstCol => 

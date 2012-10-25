@@ -132,8 +132,7 @@ object QueryExpTools{
 	  List(Right(tableNode))
 
 	case Right(GroupByNode(tableNode,key)) => 
-	  //List(Right(tableNode))
-	  List(Left(key))// ++ 
+	  List(Left(key))
 
 	case Left(ConstCol(ConstantColExp(t,value))) => 
 	  List(Right(t))

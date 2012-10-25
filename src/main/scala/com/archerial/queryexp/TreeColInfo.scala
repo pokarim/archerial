@@ -24,35 +24,11 @@ case class TreeColInfo(col2table:Rel[ColExp,TableExp],trees:Seq[TableTree]){
   val root:TableTree = trees(0)
   val table_tree = 
 	Rel.gen(trees)(UnitTable #:: _.tableExps).inverse
-
   val table_tree_NoUnit = 
 	Rel.gen(trees)(_.tableExps).inverse
-  
-  val _tree_col = (col2table ++ table_tree).inverse
+  val tree_col:Rel[TableTree,ColExp] = 
+	(col2table ++ table_tree).inverse
   val table2col = col2table.inverse
-  val dep_col:Rel[ColExp,TableExp] = 
-	Rel(for {tree <- trees
-				col <- tree.getForeignCols()
-				table <- col.getTables} yield (col,table))
-  
-  val optCols:Rel[TableTree,ColExp] = 
-	Rel(for {tree <- trees
-				(optcol4row, dep) <- tree.getOptionalCols} 
-		   yield (tree,optcol4row))
-
-  val optColsOwner:Rel[TableExp,ColExp] = Rel(
-	for {
-	  tree <- trees
-	  (optcol4row, dep) <- tree.getOptionalCols
-	  ownerTtable <- optcol4row.getTables} 
-	yield (ownerTtable,optcol4row))
-
-	val tree_col:Rel[TableTree,ColExp] = 
-	  _tree_col | (dep_col ++ table_tree).inverse | (
-		table_tree.inverse ++ optColsOwner)
-
-  val tree_col4arrow:Rel[TableTree,ColExp] = 
-	   tree_col | optCols | Rel(List(root -> UnitTable.primaryKeyCol))
 }
 
 

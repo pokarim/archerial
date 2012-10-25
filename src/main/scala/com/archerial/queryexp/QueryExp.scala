@@ -210,12 +210,9 @@ case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
 }
 
 case class SumQExp(table:TableExp,valcol:Col) extends Columnable{
-  val root:TableExp = //keycol.colNode.table
-	valcol.table
-	//GroupByNode(valcol.colNode.table,keycol)
+  val root:TableExp = valcol.table
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
-	//val t = group.tableNode
-	val t = table
+	val t = table//root
 	ColEvalTool.eval(qexpCol, t, vcol, values, getter)
   }
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)

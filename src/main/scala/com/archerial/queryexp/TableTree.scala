@@ -28,32 +28,14 @@ import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
 case class TableTree(node:TableExp, children:List[TableTree]){
-  def argCols:List[ColExp] = (for {table <- tableExps
-		 col <- table.argCols
-		 if !col.tables.forall(contains(_))}
-	yield col).toList
-
-  def getOptionalCols() = 
-	node.getOptionalCols(true) ++
-  getAllTableExps.tail.flatMap(_.getOptionalCols(false))
-
-  def getAllTableExps:Stream[TableExp] = node #:: children.toStream.flatMap(_.getAllTableExps)
-  lazy val allTableExps = getAllTableExps.toSet
+  def getAllTableExps = tableExps
+   lazy val allTableExps = tableExps.toSet//getAllTableExps.toSet
   def contains(node:TableExp) = allTableExps.contains(node)
 
   lazy val tableExps :Stream[TableExp] = {
 	val xs = node #:: children.flatMap(_.tableExps).toStream
 	xs
   }
-
-  final def getForeignCols():Seq[ColExp] = 
-  	for {table <- allTableExps.toSeq
-		 colNode <- 
-		 QueryExpTools.colNodeList(table)//TODO add COlQEXP
-		 dp <- colNode.getTables
-		 val colsParent = dp.getColsRefTarget
-		 if !contains(colsParent)}
-	yield colNode
 
 }
 
@@ -62,9 +44,7 @@ object TableTree {
   type Tbx = TableExp
   type TTree = TableTree
   type TTrees = Seq[TableTree]
-	type TbxSet = Set[Tbx]
-	
-
+  type TbxSet = Set[Tbx]
   def genTableTree(root:TableExp, map:Rel[TableExp,TableExp]):TableTree =
 	TableTree(
 	  root,

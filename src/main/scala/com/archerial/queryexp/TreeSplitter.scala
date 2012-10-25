@@ -64,7 +64,7 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	val children = table2children(root)
 	TableTree(root,children.map(oneTree(_)).toList)
   }
-  //(TableTree(root,xs.map(_._1).toList), xs.flatMap(_._2))
+
   def apply(root:Tbx, isDirect:Boolean=true):State[TbxSet, (TTree, TTrees)] = {
 	val children = table2children(root)
 	if (root.rowMulFactor == RowMulFactor.Group){
@@ -89,8 +89,22 @@ object SimpleGenTrees{
 	val (main,others) = SimpleGenTrees(table2col,table2children)(table2children.root)(Set())._2
 	main :: others.toList
   }
-
-  def splitToPieces(cexp:QueryExp):List[TTree] =
+  def splitToPieces(cexp:QueryExp):List[TTree] ={
+	def g(cur:TableExp):TTree = {
+	  val cs = cexp.table2children(cur)
+	  TableTree(cur,cs.map(g).toList)
+	}
+	def f(cur:TableExp):List[TTree]={
+	  if (cur.isInstanceOf[GroupByNode])
+		List(g(cur))
+	  else{
+		val cs = cexp.table2children(cur)
+		TableTree(cur,Nil) :: cs.flatMap(f).toList
+	  }
+	}
+	f(cexp.table2children.root)
+  }
+  def splitToPieces2(cexp:QueryExp):List[TTree] =
 	cexp.tableNodeList.map(TableTree(_,Nil)).toList
 
   def oneTree(cexp:QueryExp,root :TableExp):TableTree = 
@@ -102,7 +116,6 @@ object SimpleGenTrees{
 	def f(self:TableExp):State[TbxSet, TTree]={
 	  val children = table2children(self)
 	  val getparents = table2children.inverse
-	  //children.map(f).toList
 	  for {
 		_ <- modify[TbxSet](_ + self)
 		set <- init[TbxSet]
@@ -111,7 +124,6 @@ object SimpleGenTrees{
 		cs <- forS(directChildren)(f(_))}
 	  yield TableTree(self, cs)
 	}
-	//val root = table2children.root
 	f(root)(Set())._2
   }
 }

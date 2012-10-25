@@ -33,54 +33,27 @@ object `package` {
   type Tt2R = Map[TableTree,Seq[Row]]
 }
 
-
-case class RowsGetter2(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
-	import RowTool.groupByCol
+case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
+  import RowTool.groupByCol
   def getmap() = {
-	//for {tree <- colInfo.trees} yield 
-	  colInfo.trees.map(
-		(tree)=> tree2map(tree)).foldLeft(Map():T2C2V2R)(
-_ ++ _
-)
+	colInfo.trees.map(
+	  (tree)=> tree2map(tree)).foldLeft(Map():T2C2V2R)(_ ++ _)
   }
 
   lazy val t2c2v2r:T2C2V2R = getmap()
 
   def tree2map(tree:TableTree) ={
 	val ts = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
-	//
-
-val cols = ts.flatMap(
-  colInfo.table2col(_))
-  //QueryExpTools.colNodeList(_))
-
-	val select = SelectGen.gen2(ts,
-								cols,
-								//colInfo.tree_col(tree),
-								Nil)
+	val cols = ts.flatMap(
+	  colInfo.table2col(_))
+	val select = SelectGen.gen2(ts,cols,Nil)
 	val rows = select.getRows(List(Row()) )
 	val map = getMaps(tree,rows)
 	map
   }
-  def test(){
-	pprn(colInfo.trees)
-	val  tree = colInfo.trees(1)
-
-	val ts = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
-	pprn(ts)
-	val select = SelectGen.gen2(ts,colInfo.tree_col(tree),Nil)
-	pprn(select.getSQL(None))
-	val rows = select.getRows(List(Row()) )
-	
-	val map = getMaps(tree,rows)
-	pprn(rows)
-	pprn(map)
-  }
-
-
   def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R ={
 	val tables = UnitTable #:: tree.getAllTableExps.filter(
-	  (t) => !t.isGrouped)
+	  (t) => (!t.isGrouped || t.isInstanceOf[GroupByNode]))
 	tables.foldLeft(Map(): T2C2V2R)(
 	  (map : T2C2V2R, t : TableExp) =>
 		getMapsC(tree, t,map,rows))
@@ -102,114 +75,6 @@ val cols = ts.flatMap(
 	maps3
   }
 
-}
-
-
-case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
-	import RowTool.groupByCol
-
-  val trees = colInfo.trees
-  lazy val tree2rows_t2c2v2r = getTree2RowsAndT2c2v2r()
-  lazy val tree2rows = tree2rows_t2c2v2r._1
-//  lazy val t2c2v2r = tree2rows_t2c2v2r._2
-  lazy val t2c2v2r = RowsGetter2(colInfo:TreeColInfo).t2c2v2r
-
-
-  lazy val c2v2r:C2V2R = for {(t,c2v2r) <- t2c2v2r
-						(c,v2r) <- c2v2r
-					  } yield (c,v2r)
-
-
-  def getRowsMaps(mt :(Map[TableTree,Seq[Row]], T2C2V2R), tree:TableTree):(Map[TableTree,Seq[Row]],T2C2V2R) = {
-	val (t2r, t2c2v2r) = mt
-	val map = getTx2Rows(t2r, t2c2v2r, tree)
-	val maps = t2c2v2r ++ getMaps(tree,map(tree))
-	(map,maps)
-  }
-  def getTree2RowsAndT2c2v2r():(Tt2R,T2C2V2R) = {
-	  trees.foldLeft((Map[TableTree,Seq[Row]](),Map():T2C2V2R))(
-	  getRowsMaps)
-  }
-
-  def getTx2Rows(t2r:Map[TableTree,Seq[Row]],t2c2v2r:T2C2V2R, tree:TableTree):Map[TableTree,Seq[Row]] = {
-	val newRows = getRows(t2c2v2r,tree)
-	t2r ++ Map(tree -> newRows)
-  }
-
-
-  def getRows(t2c2v2r:T2C2V2R, tree:TableTree):Seq[Row]
-  = {
-	val argcol2table = Rel.gen(tree.argCols)(_.tables)
-	val table2argcol = argcol2table.inverse
-	val ancLists:Seq[List[TableExp]] = 
-	  for {table <- argcol2table.rights}
-	  yield table.directAncestorsWithSelf
-	val (List(ttree), dropped) = Tree.dropTrunk(ancLists)
-	val rootCol = ttree.node.rootCol
-	val comprows = if(ttree.node == UnitTable)List(Row()) else {
-	  val rootValues = t2c2v2r(ttree.node)(rootCol.normalize).keys.toSeq
-	  rootValues.flatMap(
-		getCompRows(_,ttree,table2argcol,t2c2v2r))
-	}
-	val select = SelectGen.gen(tree,colInfo.tree_col(tree))
-	val newRows = select.getRows(comprows)
-	newRows
-  }
-
-  def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R ={
-	val tables = UnitTable #:: tree.getAllTableExps.filter(
-	  (t) => !t.isGrouped)
-	tables.foldLeft(Map(): T2C2V2R)(
-	  (map : T2C2V2R, t : TableExp) =>
-		getMapsC(tree, t,map,rows))
-  }
-  def getMapsC(tree:TableTree,node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
-	val map:Map[ColExp,Map[Value,Seq[Row]]] = maps.getOrElse(node,Map[ColExp,Map[Value,Seq[Row]]]())
-	val rootCol = node.rootCol
-	val rootPk = node.rootCol.tables.head.pk
-	val anc = (node :: node.rootCol.tables).toSet
-	val pk = node.pk
-	val rows2:Seq[Row] = distinct(rows)((row)=>
-	  for {(k,v) <- row.map
-		   if k.tables.forall(node == _ ) || rootCol == k}
-	  yield (k,v))
-	val map2:C2V2R = map ++ 
-	(for {col <- Set(rootCol,pk)}
-	yield col.normalize -> groupByCol(rows2,col)).toMap
-	val maps3:T2C2V2R = maps ++ Map(node ->map2)
-	maps3
-  }
-
-  def getCompRows(rootValue:Value,ttree:Tree[TableExp],table2argcol:Rel[TableExp,ColExp],t2c2v2r:T2C2V2R):Seq[Row] = {
-	val node = ttree.node
-	assert(node != UnitTable, "is not UnitTable")
-	val pks = 
-	  if (rootValue.nonNull)
-		t2c2v2r(node)(node.rootCol.normalize)(rootValue).map(_.d(node.pk))
-	  else Nil
-	val rows = for {pk <- pks
-					if pk.nonNull
-					row <- t2c2v2r(node)(node.pk.normalize)(pk)}
-			   yield row
-
-	val argcols = table2argcol(node)
-	pprn("argcols",argcols)
-	val rows2 = 
-	  for {row <- rows}
-	  yield {
-		val rowss:Seq[Seq[Row]] = 
-		  for {ctree <- ttree.children} 
-		  yield getCompRows(
-			row.d(ctree.node.rootCol)
-			,ctree,table2argcol,t2c2v2r)
-		val rowHere = Row(argcols.map((x) => x->row.d(x)))
-		rowss.foldLeft(List(rowHere))((rowsL,rowsR) => 
-		  for {l <- rowsL
-			   r <- rowsR} 
-		  yield Row(l.map ++ r.map))
-	  }
-	rows2.flatten.distinct
-  }
 }
 object RowTool {
   def groupByCol(rows:Seq[Row],col:ColExp):Map[Value,Seq[Row]] = {

@@ -65,7 +65,7 @@ case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
 
 case class QExpCol(table:TableExp,exp:QueryExp) extends ColExp{
   override def constants:Seq[ConstantQueryExp] = exp.constants
-  def getTables:List[TableExp] = List(table)
+  def getTables:List[TableExp] = List(table) 
   def getColNodes:List[ColNode] = Nil
   def getSQL(map: TableIdMap):String = exp.getSQL(map)
 }
