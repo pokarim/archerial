@@ -55,6 +55,7 @@ object ToJson{
 		JField(s,toJValue(v))}.toList)
 	case Val(RawVal.Null,_) => JNull
 	case Val(RawVal.Int(x),_) => JInt(x)
+	case Val(RawVal.Long(x),_) => JInt(x)
 	case Val(RawVal.Str(x),_) => JString(x)
 	case ErrorValue(s) => JNull
 	case UnitValue => JNull
