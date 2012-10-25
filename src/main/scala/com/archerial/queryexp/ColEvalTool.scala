@@ -37,10 +37,12 @@ object ColEvalTool{
 		(pcol2,pvals)
 	  }
 	val c2v2r = getter.t2c2v2r(table)
+	pprn("table:",table)
 	for {pv <- pvalues
 		 row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
-		 if (row.d(table.pk).nonNull)
-		   val v = row.d(colExp)
+		 if (row.d(table.pk).nonNull);
+		 val _ = pprn(colExp,row.map)
+		 val v = row.d(colExp)
 		 if v.nonNull}
 	yield v
   }

@@ -30,6 +30,10 @@ object QueryExpTools{
 	case Left(qs) => qs.flatMap((x)=>getQueryExps(Left(x)))
 	case Right(ts) => ts.flatMap((x)=>getQueryExps(Right(x)))}
 
+  def getContainTables:Either[Seq[QueryExp],Seq[TableExp]] => Seq[TableExp] = {
+	case Left(qs) => qs.flatMap((x)=>getTableExps(Left(x))).reverse.distinct
+	case Right(ts) => ts.flatMap((x)=>getTableExps(Right(x))).reverse.distinct}
+
   def getQueryExps(self:Either[QueryExp,TableExp],pot:Set[Either[QueryExp,TableExp]]=Set()):List[QueryExp] = {
 	if (pot(self)) Nil
 	else{

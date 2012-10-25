@@ -24,10 +24,10 @@ import com.archerial.utils.implicits._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
-case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp], groupList:List[TableExp], outerTableIdMap:Option[TableIdMap]){
+case class SelectGen(rootTable:TableExp,/*tree:TableTree, */ colExps: List[ColExp], colExps4Row: List[ColExp], tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp], groupList:List[TableExp], outerTableIdMap:Option[TableIdMap]){
   assert(! tableExps.isEmpty, "require nonEmpty")
-  assert(tree.node == tableExps.head, "hoge root")
-  def rootTable:TableExp = tree.node
+  //assert(tree.node == tableExps.head, "hoge root")
+  //def rootTable:TableExp = tree.node
   lazy val _tableIdMap = TableIdMap.genTableIdMap(tableExps,outerTableIdMap)
 
   val table_alias = 
@@ -70,6 +70,7 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 	  else gls.head//.getSQL()
 	  
 	val sql = "select %s from %s%s%s" format(cs,ts,ws,gs)
+	pprn(sql)
 	(sql,ps.map((x) => idMap.constMap(x) -> x.rawVal))
   }
 
@@ -94,15 +95,16 @@ case class SelectGen(tree:TableTree, colExps: List[ColExp], colExps4Row: List[Co
 
 object SelectGen {
 
-  def gen(tree:TableTree,colExps: Seq[ColExp], outerTableIdMap:Option[TableIdMap]=None) = {
+
+  def gen2(tableExps:Seq[TableExp], colExps: Seq[ColExp], getOptionalCols:List[(ColExp,ColExp)], outerTableIdMap:Option[TableIdMap]=None) = {
 	assert(colExps.nonEmpty,
 		 "SelectGen.gen.colExps must be nonEmpty")
-	val tableExps:Seq[TableExp] = tree.tableExps
+	//val tableExps:Seq[TableExp] = tableExps
 	val tableExpsTail = tableExps.tail
 	val rootTableExp = tableExps.head
-	assert(rootTableExp == tree.node, "hoge root3")
+	//assert(rootTableExp == tree.node, "hoge root3")
 	val wheresOrOthers = 
-	  groupTuples{for (x<- tableExpsTail) yield 
+	  groupTuples{for (x <- tableExpsTail) yield 
 		x.getTableType -> x}
 	  //(x.isInstanceOf[WhereNode],x))
 	val whereList = wheresOrOthers.getOrElse(
@@ -112,15 +114,20 @@ object SelectGen {
 	val groupList = wheresOrOthers.getOrElse(
 	  TableNodeType.GroupBy,Nil).map(_.asInstanceOf[GroupByNode]).toList
 	assert(! tableList.isEmpty, "require nonEmpty")
-	val optCols = tree.getOptionalCols
+	val optCols = getOptionalCols//tree.getOptionalCols
 	val normalCols = 
 	  (colExps
 	   ++ colExps.flatMap(_.tables.filter(!_.isGrouped).map(_.pk))
 	 ).distinct.toList
-	SelectGen(tree, 
+	SelectGen(rootTableExp, 
 		   (normalCols ++ optCols.map(_._2)),
 		   (normalCols ++ optCols.map(_._1)),
 		   tableList,whereList.map(_.cond),whereList,groupList,outerTableIdMap) 
+  }
+
+
+  def gen(tree:TableTree,colExps: Seq[ColExp], outerTableIdMap:Option[TableIdMap]=None) = {
+gen2(tree.tableExps, colExps: Seq[ColExp], tree.getOptionalCols:List[(ColExp,ColExp)], outerTableIdMap:Option[TableIdMap])
   }
 	
 }

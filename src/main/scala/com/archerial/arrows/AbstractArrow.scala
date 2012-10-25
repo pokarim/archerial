@@ -82,7 +82,7 @@ trait AbstractArrow {
 	  val Col(ColNode(t1,_)) = pred._2
 	  val pred2@(obj:ColObject, Col(ColNode(cTable, cCol))) = pred._1.id(pred)
 	  cTable match {
-		case x:JoinNode if false => {
+		case x:JoinNode => {
 		  val (_, condExp) = cond(pred2)
 		  val condf = (node:JoinNode) =>
 			cond(obj,Col(ColNode(node,cCol)))._2

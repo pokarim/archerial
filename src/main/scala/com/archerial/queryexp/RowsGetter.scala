@@ -32,11 +32,89 @@ object `package` {
   type Tx2R = Map[TableExp,Seq[Row]]
   type Tt2R = Map[TableTree,Seq[Row]]
 }
+
+
+case class RowsGetter2(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
+	import RowTool.groupByCol
+  def getmap() = {
+	//for {tree <- colInfo.trees} yield 
+	  colInfo.trees.map(
+		(tree)=> tree2map(tree)).foldLeft(Map():T2C2V2R)(
+_ ++ _
+)
+  }
+
+  lazy val t2c2v2r:T2C2V2R = getmap()
+
+  def tree2map(tree:TableTree) ={
+	val ts = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
+	//
+
+val cols = ts.flatMap(
+  colInfo.table2col(_))
+  //QueryExpTools.colNodeList(_))
+
+	val select = SelectGen.gen2(ts,
+								cols,
+								//colInfo.tree_col(tree),
+								Nil)
+	val rows = select.getRows(List(Row()) )
+	val map = getMaps(tree,rows)
+	map
+  }
+  def test(){
+	pprn(colInfo.trees)
+	val  tree = colInfo.trees(1)
+
+	val ts = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
+	pprn(ts)
+	val select = SelectGen.gen2(ts,colInfo.tree_col(tree),Nil)
+	pprn(select.getSQL(None))
+	val rows = select.getRows(List(Row()) )
+	
+	val map = getMaps(tree,rows)
+	pprn(rows)
+	pprn(map)
+  }
+
+
+  def getMaps(tree:TableTree,rows:Seq[Row]):T2C2V2R ={
+	val tables = UnitTable #:: tree.getAllTableExps.filter(
+	  (t) => !t.isGrouped)
+	tables.foldLeft(Map(): T2C2V2R)(
+	  (map : T2C2V2R, t : TableExp) =>
+		getMapsC(tree, t,map,rows))
+  }
+  def getMapsC(tree:TableTree,node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
+	val map:Map[ColExp,Map[Value,Seq[Row]]] = maps.getOrElse(node,Map[ColExp,Map[Value,Seq[Row]]]())
+	val rootCol = node.rootCol
+	val rootPk = node.rootCol.tables.head.pk
+	val anc = (node :: node.rootCol.tables).toSet
+	val pk = node.pk
+	val rows2:Seq[Row] = distinct(rows)((row)=>
+	  for {(k,v) <- row.map
+		   if k.tables.forall(node == _ ) || rootCol == k}
+	  yield (k,v))
+	val map2:C2V2R = map ++ 
+	(for {col <- Set(rootCol,pk)}
+	yield col.normalize -> groupByCol(rows2,col)).toMap
+	val maps3:T2C2V2R = maps ++ Map(node ->map2)
+	maps3
+  }
+
+}
+
+
 case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
+	import RowTool.groupByCol
+
   val trees = colInfo.trees
   lazy val tree2rows_t2c2v2r = getTree2RowsAndT2c2v2r()
   lazy val tree2rows = tree2rows_t2c2v2r._1
-  lazy val t2c2v2r = tree2rows_t2c2v2r._2
+//  lazy val t2c2v2r = tree2rows_t2c2v2r._2
+  lazy val t2c2v2r = RowsGetter2(colInfo:TreeColInfo).t2c2v2r
+
+
   lazy val c2v2r:C2V2R = for {(t,c2v2r) <- t2c2v2r
 						(c,v2r) <- c2v2r
 					  } yield (c,v2r)
@@ -115,6 +193,7 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 			   yield row
 
 	val argcols = table2argcol(node)
+	pprn("argcols",argcols)
 	val rows2 = 
 	  for {row <- rows}
 	  yield {
@@ -131,6 +210,8 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	  }
 	rows2.flatten.distinct
   }
+}
+object RowTool {
   def groupByCol(rows:Seq[Row],col:ColExp):Map[Value,Seq[Row]] = {
 	val root2row:Map[Value,Seq[Row]] = groupTuples({
 	  for {row <- rows
@@ -141,5 +222,4 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 	  )}.distinct)
 	root2row
   }
-	
 }
