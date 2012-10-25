@@ -49,79 +49,88 @@ class SampleSpec extends Specification {
 
   "Sample 1" should {
     val h2driver = Class.forName("org.h2.Driver")
-    implicit val con:java.sql.Connection = DriverManager.getConnection("jdbc:h2:mem:sampespec", "", "")
+    implicit val con:java.sql.Connection = DriverManager.getConnection("jdbc:h2:mem:samplespec", "", "")
     val staffTable = Table("staff", List(
       Column("id", int.primaryKey),
       Column("name", varchar(200)),
-      Column("boss_id", int)
+      Column("boss_id", int),
+      Column("height", int)
     ))
     staffTable.createTable()
     staffTable.insertRows(
-      List("id"-> 1, "name"-> "hokari", "boss_id" -> Null),
-      List("id"-> 2, "name"-> "mikio", "boss_id" -> 1),
-      List("id"-> 3, "name"-> "keiko", "boss_id" -> 2),
-      List("id"-> 4, "name"-> "manabu", "boss_id" -> 1)
+      List("id"-> 1, "name"-> "Guido", "boss_id" -> Null,
+		   "height" -> 170),
+      List("id"-> 2, "name"-> "Martin", "boss_id" -> 1,
+		   "height" -> 160),
+      List("id"-> 3, "name"-> "Larry", "boss_id" -> 2,
+		   "height" -> 150),
+      List("id"-> 4, "name"-> "Rich", "boss_id" -> 1,
+		   "height" -> 180
+		 )
     )
 
     val Id = ColObject(staffTable,"id")
     val Name = ColObject(staffTable,"name")
+    val Height = ColObject(staffTable,"height")
     val name = ColArrow(Id, Name)
+    val height = ColArrow(Id, Height)
     val boss = ColArrow(Id, Id, "id", "boss_id")
 	val sub = ~boss
     val staffs = AllOf(Id)
     
-    val exp = (staffs >>> Filter(boss >>> name =:= "hokari") >>> name).queryExp
+    val exp = (staffs >>> Filter(boss >>> name =:= "Guido") >>> name).queryExp
     pprn(exp)
     pprn(QueryExpTools.getQueryExps(Left(exp)))
     //exp.eval()
+
     staffs.eval().prettyJsonString ===
       """[ 1, 2, 3, 4 ]"""
 
     {staffs >>> name}.eval().prettyJsonString ===
-      """[ "hokari", "mikio", "keiko", "manabu" ]"""
+      """[ "Guido", "Martin", "Larry", "Rich" ]"""
 
-    {staffs >>> Filter(name =:= "hokari") >>> name
+    {staffs >>> Filter(name =:= "Guido") >>> name
            }.eval().prettyJsonString ===
-             """[ "hokari" ]"""
+             """[ "Guido" ]"""
 
-    {staffs >>> Filter(boss >>> name =:= "hokari") >>> name
+    {staffs >>> Filter(boss >>> name =:= "Guido") >>> name
            }.eval().prettyJsonString ===
-             """[ "mikio", "manabu" ]"""
+             """[ "Martin", "Rich" ]"""
 
     {staffs >>> boss }.eval().prettyJsonString ===
       """[ 1, 2, 1 ]"""
     
     {staffs >>> boss >>> name}.eval().prettyJsonString ===
-      """[ "hokari", "mikio", "hokari" ]"""
+      """[ "Guido", "Martin", "Guido" ]"""
 
     {staffs >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
       """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ]
+  "Name" : [ "Guido" ]
 }, {
   "__id__" : [ 2 ],
-  "Name" : [ "mikio" ]
+  "Name" : [ "Martin" ]
 }, {
   "__id__" : [ 3 ],
-  "Name" : [ "keiko" ]
+  "Name" : [ "Larry" ]
 }, {
   "__id__" : [ 4 ],
-  "Name" : [ "manabu" ]
+  "Name" : [ "Rich" ]
 } ]"""
 
-    (staffs >>> Filter(name =:= "hokari") >>>
+    (staffs >>> Filter(name =:= "Guido") >>>
      NamedTuple("Name" -> name,
                 "Boss" -> (boss >>> name),
                 "Subordinates" -> (~boss >>> name)
               )).eval().prettyJsonString ===
                 """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ],
+  "Name" : [ "Guido" ],
   "Boss" : [ ],
-  "Subordinates" : [ "mikio", "manabu" ]
+  "Subordinates" : [ "Martin", "Rich" ]
 } ]"""
 
-    {staffs >>> Filter(name =:= Const("hokari")) >>>
+    {staffs >>> Filter(name =:= Const("Guido")) >>>
              NamedTuple("Name" -> name,
                         "Boss" -> (boss >>> name),
                         "Subordinates" -> 
@@ -130,26 +139,49 @@ class SampleSpec extends Specification {
    }.eval().prettyJsonString ===
                         """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ],
+  "Name" : [ "Guido" ],
   "Boss" : [ ],
   "Subordinates" : [ {
     "__id__" : [ 2 ],
-    "Name" : [ "mikio" ]
+    "Name" : [ "Martin" ]
   }, {
     "__id__" : [ 4 ],
-    "Name" : [ "manabu" ]
+    "Name" : [ "Rich" ]
   } ]
 } ]"""
 	
 	{staffs >>> 
-	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
+	Filter(Any(sub >>> name  =:= Const(Str("Rich"))))>>>
 	NamedTuple(
 	  "Name" -> name,
 	  "Subordinates" -> (sub >>> name))}.eval().prettyJsonString === """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ],
-  "Subordinates" : [ "mikio", "manabu" ]
+  "Name" : [ "Guido" ],
+  "Subordinates" : [ "Martin", "Rich" ]
 } ]"""
+
+	Sum(staffs >>> height).eval().prettyJsonString === 
+	  "[ 660 ]"
+
+	{staffs >>> Filter(name =:= Const("Guido")) >>>
+		  NamedTuple(
+			"Subordinates" -> (sub >>> NamedTuple(
+			  "Height" -> height)),
+			"Sum" -> Sum(sub >>> height))
+   }.eval().prettyJsonString === 
+	 """[ {
+  "__id__" : [ 1 ],
+  "Subordinates" : [ {
+    "__id__" : [ 2 ],
+    "Height" : [ 160 ]
+  }, {
+    "__id__" : [ 4 ],
+    "Height" : [ 180 ]
+  } ],
+  "Sum" : [ 340 ]
+} ]"""
+
+	0===0
 
   }
 }

@@ -87,7 +87,7 @@ val exp_ = 	  	  (staff >>>
 
 
 
-	  val arr_ = {
+	  val complex1 = {
 		AllOf(Order.Id) >>> Tuple(
 		  Order.Id.id,
 		  Sum(Order.orderItems >>> OrderItem.qty),
@@ -111,53 +111,37 @@ val exp_ = 	  	  (staff >>>
 		  ~boss >>> Filter(name =:= Const(Str("keiko"))) >>>
 		  name,
 		  name)
+		complex1
+Sum(AllOf(Order.Id) )
+		  // AllOf(Order.Id) >>> Tuple(Order.Id.id,
+		  // 						  Sum(Order.Id.id))
 	  }
 	  //pprn(sum1.eval())
 	  val exp = arr.queryExp
-	  if(true){
-		//val trees = SimpleGenTrees.gen(exp)
-		val trees = SimpleGenTrees.gen(exp)
-		SimpleGenTrees.splitToPieces(exp)
+	  pprn(exp.eval(SimpleGenTrees.gen))
+	  pprn(exp.eval(SimpleGenTrees.splitToPieces))
+	  if(false){
+		val trees = {
+		  SimpleGenTrees.gen(exp)
+		  SimpleGenTrees.splitToPieces(exp)
+		}
 		val tree= trees.head
-		pprn("tableNodeList",exp.tableNodeList)
-		pprn("trees:",trees)
-		// pprn("t2c",exp.table2children.pairs)
-		// pprn("t2c.root",exp.table2children.root)
+		// pprn("tableNodeList",exp.tableNodeList)
+		 pprn("trees:",trees)
+//		 pprn("eval:",exp.eval())
+
 		val colInfo = TreeColInfo(
 		  exp.col2table, //OM
 		  trees)
 		val getter = RowsGetter(colInfo)
-		// pprn(exp)
-		// pprn(exp.tableNodeList)
-		import QueryExpTools._
-		val ntuple = directParents(Left(exp))(1)
-		val sum = directParents(ntuple)
-		// pprn("colListOM",exp.colListOM)
-		// pprn("colList",exp.colList)
-		val select = SelectGen.gen(tree,colInfo.tree_col(tree))
-		 val (sql, ps) =select.getSQL(None)
-		 pprn(sql)
+		//(getter.t2c2v2r)
+		//pprn(colInfo.table2col.pairs)
+		  val vs = exp.eval(
+		    UnitTable.pk,
+		    List(UnitValue),
+		    getter)
+		 pprn(vs)
 
-		pprn("eval:",exp.eval())
-
-		// pprn(getter.t2c2v2r)
-		// pprn(trees.head.getAllTableExps)
-		// val vs = exp.eval(
-	  	//   UnitTable.pk,
-	  	//   List(UnitValue),
-	  	//   getter)
-		// pprn(vs)
-		// exp.eval()
-
-
-		//exp.eval()
-
-		// val select = SelectGen.gen(tree,colInfo.tree_col(tree))
-		// val (sql, ps) =select.getSQL(None)
-		// pprn(sql)
-		// pprn(exp.col2tableOM.pairs)
-		// pprn(("eval:",exp.eval()))
-		//pprn(exp.eval())
 	  }
 	  0 === 0
 	}

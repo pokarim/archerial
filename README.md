@@ -27,10 +27,11 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
 #### 簡単な例
 
 <table>
-  <tr><th>id </th><th>name </th><th>boss_id </th></tr>
-  <tr><td>1 </td><td>hokari </td><td>null </td></tr>
-  <tr><td>2 </td><td>mikio </td><td>1 </td></tr>
-  <tr><td>3 </td><td>keiko </td><td>2 </td></tr>
+  <tr><th>id </th><th>name </th><th>boss_id </th><th>height </th></tr>
+  <tr><td>1 </td><td>Guido </td><td>null </td><td>170 </td></tr>
+  <tr><td>2 </td><td>Martin </td><td>1 </td><td>160 </td></tr>
+  <tr><td>3 </td><td>Larry </td><td>2 </td><td>150 </td></tr>
+  <tr><td>4 </td><td>Rich </td><td>1 </td><td>180 </td></tr>
 </table>
 
 まずはテーブルとレコードを用意します。
@@ -40,14 +41,17 @@ Archerialでは入れ子になったデータを取得するクエリを、宣�
     val staffTable = Table("staff", List(
       Column("id", int.primaryKey),
       Column("name", varchar(200)),
-      Column("boss_id", int)
+      Column("boss_id", int),
+      Column("height", int)
     ))
     staffTable.createTable()
     staffTable.insertRows(
-      List("id"-> 1, "name"-> "hokari", "boss_id" -> Null),
-      List("id"-> 2, "name"-> "mikio", "boss_id" -> 1),
-      List("id"-> 3, "name"-> "keiko", "boss_id" -> 2),
-      List("id"-> 4, "name"-> "manabu", "boss_id" -> 1))
+      List("id"-> 1, "name"-> "Guido", "boss_id" -> Null, "height" -> 170),
+      List("id"-> 2, "name"-> "Martin", "boss_id" -> 1, "height" -> 160),
+      List("id"-> 3, "name"-> "Larry", "boss_id" -> 2, "height" -> 150),
+      List("id"-> 4, "name"-> "Rich", "boss_id" -> 1, "height" -> 180
+		 )
+    )
 ```
 
 つぎはマッピングです。
@@ -58,6 +62,7 @@ RDBの定義域（ドメイン）にも近いものです。
 ```scala
     val Id = ColObject(staffTable,"id")
     val Name = ColObject(staffTable,"name")
+    val Height = ColObject(staffTable,"height")
 ```
 
 Objectの次は,カラムのペアをArrowにマッピングします。
@@ -68,6 +73,7 @@ ColArrowは、入力元の定義域となるColObjectと
 
 ```scala
     val name = ColArrow(Id, Name) // Id -> Name
+    val height = ColArrow(Id, Height)
 ```
 
 ここで定義したものはstaffテーブルのidカラムとnameカラムの２列のみからなるテーブルのようなものです。
@@ -163,6 +169,27 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
   "__id__" : [ 1 ],
   "Name" : [ "hokari" ],
   "Subordinates" : [ "mikio", "manabu" ]
+} ]"""
+
+	Sum(staffs >>> height).eval().prettyJsonString === 
+	  "[ 660 ]"
+
+	{staffs >>> Filter(name =:= Const("Guido")) >>>
+		  NamedTuple(
+			"Subordinates" -> (sub >>> NamedTuple(
+			  "Height" -> height)),
+			"Sum" -> Sum(sub >>> height))
+   }.eval().prettyJsonString === 
+	 """[ {
+  "__id__" : [ 1 ],
+  "Subordinates" : [ {
+    "__id__" : [ 2 ],
+    "Height" : [ 160 ]
+  }, {
+    "__id__" : [ 4 ],
+    "Height" : [ 180 ]
+  } ],
+  "Sum" : [ 340 ]
 } ]"""
 
 
