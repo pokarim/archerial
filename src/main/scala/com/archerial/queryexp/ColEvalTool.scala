@@ -23,7 +23,7 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 import scala.collection.immutable
 
 object ColEvalTool{
-  def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
+  def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): Seq[Value] = {
 	val (pcol,pvalues) =
 	  if (colExp == UnitTable.pk  ||
 		getter.t2c2v2r(table).contains(vcol.normalize)
@@ -41,7 +41,7 @@ object ColEvalTool{
 		 row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
 		 if (row.d(table.pk).nonNull);
 		 val v = row.d(colExp)
-		 if v.nonNull}
+		 if !dropNull || v.nonNull}
 	yield v
   }
 }

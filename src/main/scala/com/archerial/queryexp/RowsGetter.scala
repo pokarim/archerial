@@ -44,9 +44,9 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
 
   def tree2map(tree:TableTree) ={
 	val ts = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
-	val cols = ts.flatMap(
-	  colInfo.table2col(_))
-	val select = SelectGen.gen2(ts,cols,Nil)
+	val cols = (ts.filter(!_.isGrouped).map(_.pk) ++
+				ts.flatMap(colInfo.table2col(_)) )
+	val select = SelectGen.gen2(ts,cols.distinct,Nil)
 	val rows = select.getRows(List(Row()) )
 	val map = getMaps(tree,rows)
 	map

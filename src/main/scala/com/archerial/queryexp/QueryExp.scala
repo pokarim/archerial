@@ -213,9 +213,16 @@ case class SumQExp(table:TableExp,valcol:Col) extends Columnable{
   val root:TableExp = valcol.table
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
 	val t = table//root
-	val vs = ColEvalTool.eval(qexpCol, t, vcol, values, getter)
-	if (vs.nonEmpty) vs
-	else Seq(Val(RawVal.Int(0)))
+	val vs = ColEvalTool.eval(
+	  qexpCol, t, vcol, values, getter,false)
+	if (vs.isEmpty) 
+	 Seq(Val(RawVal.Int(0)))
+	else
+	  for {v <- vs}
+	  yield {
+		if (v.nonNull) v 
+		else Val(RawVal.Int(0))
+	  }
   }
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
   def getSQL(map: TableIdMap):String =	{
