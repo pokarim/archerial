@@ -171,8 +171,40 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
   "Subordinates" : [ "mikio", "manabu" ]
 } ]"""
 
+```
+#### 集計関数の例
+
+集計関数としてSumの使い方。
+staffのheightの合計を求めるArrowは以下のようになります。
+
+```scala
+
 	Sum(staffs >>> height).eval().prettyJsonString === 
 	  "[ 660 ]"
+
+```
+
+#### Group By 相当の例
+
+staffs >>> height は、UnitからIntへのArrowでした。
+次は、各Staffについて、その部下（Subordinates）の身長(height)の合計を求めます。
+部下の身長は
+sub >>> height
+であり、その合計は、
+Sum(sub >>> height)
+になります。
+これをすべてのStaffについて求める式は、
+{staffs >>> Sum(sub >>> height)}
+です。
+
+```scala
+	{staffs >>> 
+  	 Sum(sub >>> height)}.eval().prettyJsonString ===
+	   "[ 340, 150, 0, 0 ]"
+
+```
+
+```scala
 
 	{staffs >>> Filter(name =:= Const("Guido")) >>>
 		  NamedTuple(
