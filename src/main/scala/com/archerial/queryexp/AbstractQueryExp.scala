@@ -26,7 +26,7 @@ trait AbstractQueryExp4Tree {
   this:QueryExp => ;
 
   lazy val tableNodeList :List[TableExp] =
-	QueryExpTools.getTableExps(this)
+	QueryExpTools.getTableExps(this).filter(_ != UnitTable)
 
   lazy val table2children:TreeRel[TableExp] = 
 	Rel.gen(tableNodeList)(_.dependentParents).inverse.asTree(rootTable)

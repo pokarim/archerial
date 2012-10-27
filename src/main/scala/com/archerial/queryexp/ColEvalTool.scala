@@ -30,7 +30,7 @@ object ColEvalTool{
 		) (vcol,values)
 	  else{
 		val rootCol = 
-		  colExp.tables.head.rootCol.asInstanceOf[ColNode]
+		  colExp.tables.head.rootCol.get.asInstanceOf[ColNode]
 		assert(rootCol != colExp)
 		val pvals = Col(rootCol).eval(vcol,values,getter)
 		val pcol2 = Col(rootCol).evalCol(vcol)

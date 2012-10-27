@@ -98,6 +98,10 @@ object FromTableExp{
 		labeledRBracketWC("JoinNode", List[DOC](
 		  hashCodeStr(x),lc,rt.name ++ "." ++ rc.name))
 
+	  case CrossJoin(rt,lt) =>
+		labeledRBracketWC("CrossJoin", List[DOC](
+		  hashCodeStr(x),hashCodeStr(lt)))
+
 	  case GroupByNode(t,key) =>
 		labeledRBracketWC("GroupByNode", List[DOC](
 		  hashCodeStr(x),hashCodeStr(t),key))

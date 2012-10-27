@@ -37,9 +37,9 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	val one = mul2nodes.getOrElse(RowMulFactor.One,Nil)
 	val lt1 = mul2nodes.getOrElse(RowMulFactor.LtOne,Nil)
 	val grp = mul2nodes.getOrElse(RowMulFactor.Group,Nil)
-	val grpMany = grp ++ many
-	for {main <- forS(grpMany.headOption.toList ++ one)(apply(_,isDirect))
-		 other <- forS(grpMany.drop(1) ++ lt1)(apply(_,true))}
+	//val grpMany = grp ++ many
+	for {main <- forS(many.headOption.toList ++ one)(apply(_,isDirect))
+		 other <- forS(grp ++ many.drop(1) ++ lt1)(apply(_,true))}
 	yield (TableTree(root,main.map(_._1).toList), 
 		   main.flatMap(_._2) ++ 
 		   other.map(_._1) ++ other.flatMap(_._2))
@@ -51,12 +51,18 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	  children.filter(!getparents(_).exists(!set(_)))
 	val isEmp = table2col(root).isEmpty
 	if (directChildren.length == 1 && 1 == children.length
-		&& isEmp && 
-		(isDirect || children.head.rowMulFactor != LtOne)
+		&& isEmp && children.head.rowMulFactor != Group && 
+		(isDirect || (
+		  children.head.rowMulFactor != LtOne
+		  
+)
+		)
 	  ){
 	  for {xs <- forS(children)(apply(_, isDirect && isEmp))}
 	  yield (TableTree(root,xs.map(_._1).toList), xs.flatMap(_._2))
-	} else splitDirectChildren(root, directChildren,isDirect && isEmp)
+	} else {
+	  splitDirectChildren(root, directChildren,isDirect && isEmp)
+	}
 
   }
   
@@ -67,9 +73,10 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 
   def apply(root:Tbx, isDirect:Boolean=true):State[TbxSet, (TTree, TTrees)] = {
 	val children = table2children(root)
-	if (root.rowMulFactor == RowMulFactor.Group){
-	  for (_ <- init) yield (oneTree(root),Nil)
-	}else if (children.isEmpty){
+	// if (root.rowMulFactor == RowMulFactor.Group){
+	//   for (_ <- init) yield (oneTree(root),Nil)
+	// }else 
+	  if (children.isEmpty){
 	  for {_ <- modify[TbxSet](_ + root)}
 	  yield (TableTree(root,Nil),Nil)
 	} else for {
@@ -82,8 +89,9 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 
 object SimpleGenTrees{
 
-  def gen(cexp:QueryExp):List[TTree] = 
+  def gen(cexp:QueryExp):List[TTree] = {
 	gen(cexp.col2tableOM.inverse,cexp.table2children)
+  }
 
   def gen(table2col:Rel[TableExp,ColExp],table2children : TreeRel[Tbx]):List[TTree] = {
 	val (main,others) = SimpleGenTrees(table2col,table2children)(table2children.root)(Set())._2

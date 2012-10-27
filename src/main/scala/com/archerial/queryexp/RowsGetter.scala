@@ -43,10 +43,8 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
   lazy val t2c2v2r:T2C2V2R = getmap()
 
   def tree2map(tree:TableTree) ={
-	val ts = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
-	val cols = (ts.filter(!_.isGrouped).map(_.pk) ++
-				ts.flatMap(colInfo.table2col(_)) )
-	val select = SelectGen.gen2(ts,cols.distinct,Nil)
+	val cols = tree.getColExps(colInfo)
+	val select = SelectGen.gen2(tree.depTables,cols.distinct,Nil)
 	val rows = select.getRows(List(Row()) )
 	val map = getMaps(tree,rows)
 	map
@@ -61,15 +59,14 @@ case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection
   def getMapsC(tree:TableTree,node:TableExp,maps:T2C2V2R,rows:Seq[Row]):T2C2V2R = {
 	val map:Map[ColExp,Map[Value,Seq[Row]]] = maps.getOrElse(node,Map[ColExp,Map[Value,Seq[Row]]]())
 	val rootCol = node.rootCol
-	val rootPk = node.rootCol.tables.head.pk
-	val anc = (node :: node.rootCol.tables).toSet
+	val anc = (node :: node.rootCol.toList.flatMap(_.tables)).toSet
 	val pk = node.pk
 	val rows2:Seq[Row] = distinct(rows)((row)=>
 	  for {(k,v) <- row.map
-		   if k.tables.forall(node == _ ) || rootCol == k}
+		   if k.tables.forall(node == _ ) || rootCol == Some(k)}
 	  yield (k,v))
 	val map2:C2V2R = map ++ 
-	(for {col <- Set(rootCol,pk)}
+	(for {col <- (pk::rootCol.toList ).toSet[ColExp]}
 	yield col.normalize -> groupByCol(rows2,col)).toMap
 	val maps3:T2C2V2R = maps ++ Map(node ->map2)
 	maps3

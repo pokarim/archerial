@@ -82,6 +82,13 @@ object OpArrows{
 	def unary_~ : Arrow = throw new Exception("=:=.unary") 
   }
 
+  case class *(left:Arrow, right:Arrow) extends Arrow
+  {
+	def dom = left.dom
+	def cod = left.cod
+	def unary_~ : Arrow = throw new Exception("*.unary") 
+  }
+
 }
 case class Const(x: RawVal) extends Arrow {
   def getObject:Object = {

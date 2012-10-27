@@ -41,12 +41,12 @@ case class SelectGen(rootTable:TableExp,/*tree:TableTree, */ colExps: List[ColEx
   lazy val tableIdMap, tableIdMapWithAlias = 
 	(table_alias ++ alias_table).foldLeft(_tableIdMap){
 	  case (map,(t,alias)) 
-	  => //map.addKeyAlias(t,alias)
-		{
-		if (outerTableIdMap.nonEmpty &&
+	  =>
+		if (t == UnitTable || 
+			outerTableIdMap.nonEmpty &&
 			outerTableIdMap.get.map.contains(alias)) map
-		else map.addKeyAlias(t,alias)
-	}
+		else 
+		  map.addKeyAlias(t,alias)
 	}
 
   def getSQL(row:Option[Row]):(String,Seq[(String,RawVal)])= {
@@ -70,7 +70,6 @@ case class SelectGen(rootTable:TableExp,/*tree:TableTree, */ colExps: List[ColEx
 	  else gls.head//.getSQL()
 	  
 	val sql = "select %s from %s%s%s" format(cs,ts,ws,gs)
-	pprn(sql)
 	(sql,ps.map((x) => idMap.constMap(x) -> x.rawVal))
   }
 
@@ -112,8 +111,14 @@ object SelectGen {
 	  TableNodeType.Where,Nil).map(_.asInstanceOf[WhereNode]).toList
 	val tableList = rootTableExp :: wheresOrOthers.getOrElse(
 	  TableNodeType.Table,Nil).toList
-	val groupList = wheresOrOthers.getOrElse(
-	  TableNodeType.GroupBy,Nil).map(_.asInstanceOf[GroupByNode]).toList
+	val groupList = 
+	  for {
+		g@GroupByNode(table,key) <-
+		wheresOrOthers.getOrElse(TableNodeType.GroupBy,Nil).toList
+		if table != UnitTable}
+	yield g//.asInstanceOf[GroupByNode]
+
+//.map(_.asInstanceOf[GroupByNode]).toList
 	assert(! tableList.isEmpty, "require nonEmpty")
 	val optCols = getOptionalCols//tree.getOptionalCols
 	val normalCols = 

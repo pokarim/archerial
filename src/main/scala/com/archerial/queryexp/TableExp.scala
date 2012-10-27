@@ -45,7 +45,7 @@ sealed trait TableExp {
   final def directAncestorsWithSelf:List[TableExp] = directAncestorsWithSelf_.reverse
   final def directAncestorsWithSelf_ :List[TableExp] = this :: directParent.map(_.directAncestorsWithSelf_ ).getOrElse(Nil)
   def argCols:List[ColExp]
-  def rootCol:ColExp = argCols.head
+  def rootCol:Option[ColExp] = argCols.headOption
   def filterRows(rows:Seq[Row]):Seq[Row] = rows
   final def isRoot(map:TableIdMap) = map.isRoot(this)
   def getSQL(map: TableIdMap):String = 
@@ -85,7 +85,7 @@ object UnitTable extends TableExp{
   def directParent:Option[TableExp] = None
   def argCols:List[ColExp] = List(primaryKeyCol)
   def getSQLNonRoot(map: TableIdMap):String =
-	throw new Exception("not imple")
+	throw new Exception("not imple Unit")
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.One
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
@@ -117,9 +117,11 @@ case class GroupByNode(tableNode:TableExp,key:Col) extends TableExp{
 
   override def isGrouped:Boolean = true
   override def getColsRefTarget:TableExp = tableNode
-
   def directParent:Option[TableExp] = Some(UnitTable)
-  def argCols:List[ColExp] = List(key.colNode)
+  def argCols:List[ColExp] = List(
+	key.colNode,
+	tableNode.pk
+  )
 
   def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] = Nil
   def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
@@ -208,7 +210,7 @@ case class JoinNode(right:Table, leftcol:Col,rightcolumn:Column, condf:Option[Jo
   def primaryKeyCol:ColNode = ColNode(this,right.primaryKey)
   def altLeftColNode = ColNode(this,rightcolumn)
   //def altLeftColNode = ColNode(altRoot,rightcolumn)
-  override def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = 
 	{
 	  if (row.filter(_.contains(leftcol.colNode)).nonEmpty){
 	  val Val(rawval,_) = row.get.d(leftcol.colNode)
@@ -240,3 +242,35 @@ object JoinNode {
 	}
 }
 
+
+
+
+
+
+
+
+
+case class CrossJoin(right:Table, leftTable:TableExp) extends TableExp{
+  override def isGrouped:Boolean = leftTable.isGrouped
+  def directParent:Option[TableExp] = Some(leftTable)
+  def argCols:List[ColExp] = Nil//List(leftcol.colNode)
+
+  override def dependentParents:List[TableExp] = 
+	List(leftTable)
+
+
+  def getOptionalCols(isRoot:Boolean):List[(ColExp,ColExp)] =
+	Nil
+  def rowMulFactor:RowMulFactor.Value = 
+	RowMulFactor.Many
+  def getSQLNonRoot(map: TableIdMap):String ={
+	"cross join %s as %s " format(right.name, map(this))
+  }
+
+  def altRoot = right
+  def primaryKeyCol:ColNode = ColNode(this,right.primaryKey)
+
+
+  def optionalCondsWithRoot(map: TableIdMap,row:Option[Row]):List[QueryExp] = Nil
+
+}

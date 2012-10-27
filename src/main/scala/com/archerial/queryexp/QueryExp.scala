@@ -61,6 +61,16 @@ trait BinOp extends QueryExp{
 }
 
 object OpExps {
+  case class *(left:QueryExp, right:QueryExp) extends BinOp{
+
+	def getRawValue(left:RawVal,right:RawVal):RawVal = (left,right)
+	  match{
+		case (RawVal.Int(x),RawVal.Int(y))
+		=> RawVal.Int(x * y)
+	  }
+	def SQLOpString:String = "*"
+  }
+
   case class =:=(left:QueryExp, right:QueryExp) extends BinOp{
 
 	def getRawValue(left:RawVal,right:RawVal):RawVal =
@@ -209,7 +219,7 @@ case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
 
-case class SumQExp(table:TableExp,valcol:Col) extends Columnable{
+case class SumQExp(table:GroupByNode,valcol:Col) extends Columnable{
   val root:TableExp = valcol.table
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
 	val t = table//root
@@ -224,7 +234,8 @@ case class SumQExp(table:TableExp,valcol:Col) extends Columnable{
 		else Val(RawVal.Int(0))
 	  }
   }
-  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
+  def getDependentCol():Stream[ColExp] = Stream(qexpCol,
+											  table.key.colNode)
   def getSQL(map: TableIdMap):String =	{
 	"sum(%s)" format valcol.getSQL(map)
   }

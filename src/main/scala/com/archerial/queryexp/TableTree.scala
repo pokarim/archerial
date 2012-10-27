@@ -37,6 +37,16 @@ case class TableTree(node:TableExp, children:List[TableTree]){
 	xs
   }
 
+//	val tableExps = tree.getAllTableExps.toSeq
+  val depTables = QueryExpTools.getContainTables(Right(tableExps)).filter(UnitTable != _)
+  def getColExps(colInfo:TreeColInfo) = {
+	(
+	  tableExps.filter(!_.isGrouped).map(_.pk) ++ 
+	  tableExps.filter(!_.isGrouped).flatMap(_.rootCol.toList) ++
+	  depTables.flatMap(colInfo.table2col(_)) 
+	).filter(_ != UnitTable.pk).distinct
+  }
+
 }
 
 
