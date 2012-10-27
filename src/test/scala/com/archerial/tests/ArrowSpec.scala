@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Mikio Hokari
+ * Copyright 2012 Martin Guido
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  * you may not use this file except in compliance with the License.
@@ -35,8 +35,61 @@ class ArrowSpec extends Specification {
 	val h2driver = Class.forName("org.h2.Driver")
 	implicit val con = DriverManager.getConnection("jdbc:h2:mem:hoge", "", "")
 	SampleData.createTables 
-	SampleData.insertSampleData
+	//SampleData.insertSampleData
 
+
+	if(true)	
+	  {
+	import com.archerial._
+	import RawValImplicits._
+	import RawVal.Null
+
+    Tables.staff.insertRows(
+      List("id"-> 1, "name"-> "Guido", "boss_id" -> 1,
+		   "height" -> 170),
+      List("id"-> 2, "name"-> "Martin", "boss_id" -> 1,
+		   "height" -> 160),
+      List("id"-> 3, "name"-> "Larry", "boss_id" -> 2,
+		   "height" -> 150)
+      // ,List("id"-> 4, "name"-> "Rich", "boss_id" -> 1,
+	  // 	   "height" -> 180
+	  // 	 )
+    )
+
+	Tables.dept.insertRows(
+	  List("name"-> "kaihatu", "area_id" -> 1 ),
+	  List("name"-> "kenkyu",  "area_id" -> 1))
+	Tables.area.insertRows(List("name"-> "Tokyo"))
+	Tables.hobby.insertRows(
+	  List("staff_id"-> 1, "name"-> "piano", "rank" -> "A" ),
+	  List("staff_id"-> 1, "name"-> "piano", "rank" -> "B" ),
+	  List("staff_id"-> 1, "name"-> "tennis", "rank" -> "A"),
+	  List("staff_id"-> 3, "name"-> "piano", "rank" -> "A")
+	)
+
+	Tables.staffInfo.insertRows(
+	  List("info"-> "hokariInfo")
+	)
+	
+	Tables.product.insertRows(
+	  List("name"-> "apple", "price" -> 150),
+	  List("name"-> "orange", "price" -> 100),
+	  List("name"-> "melon", "price" -> 500))
+
+	Tables.order.insertRows(
+	  List("memo"-> "AA", "staff_id" -> 2),
+	  List("memo"-> "BB", "staff_id" -> 2),
+	  List("memo"-> "CC", "staff_id" -> 3),
+	  List("memo"-> "DD", "staff_id" -> RawVal.Null)
+	)
+
+	Tables.orderItem.insertRows(
+	  List("order_id"-> 1,"product_id"-> 1,"qty" -> 3),
+	  List("order_id"-> 1,"product_id"-> 3,"qty" -> 2),
+	  List("order_id"-> 2,"product_id"-> 3,"qty" -> 1),
+	  List("order_id"-> 3,"product_id"-> 2,"qty" -> 5)
+	)
+}
 	val boss = Staff.boss
 	val sub = ~boss
 	val staffs = AllOf(Staff.Id)
@@ -44,47 +97,47 @@ class ArrowSpec extends Specification {
 	val bossname = boss >>> name
 	val subname = sub >>> name
 	val staffId = Staff.Id.id
-	val isMikio = name =:= Const(Str("mikio"))
-	val isHokari = name =:= Const(Str("hokari"))
-if(false){	
+	val isMartin = name =:= Const(Str("Martin"))
+	val isGuido = name =:= Const(Str("Guido"))
+if(true){	
 	"simple arrow" in {
 	  (staffs >>> name).queryExp.eval().toSet ===
-		Set[Value](Str("hokari"),
-				   Str("keiko"),
-				   Str("mikio"))
+		Set[Value](Str("Guido"),
+				   Str("Larry"),
+				   Str("Martin"))
 	}
 	"simple tuple" in {
 	  (staffs >>> Tuple(staffId, name)).queryExp.eval().toSet === 
 		Set(
 		  VTuple(VList(Int(1)),
-				 VList(Str("hokari"))),
+				 VList(Str("Guido"))),
 		  VTuple(VList(Int(3)),
-				 VList(Str("keiko"))),
+				 VList(Str("Larry"))),
 		  VTuple(VList(Int(2)),
-				 VList(Str("mikio"))))
+				 VList(Str("Martin"))))
 	}
 	"simple filter tuple" in {
 	
-	  (staffs >>> Filter(isMikio) >>> Tuple(
+	  (staffs >>> Filter(isMartin) >>> Tuple(
 		staffId
 		,name)).queryExp.eval().toSet === 
 		  Set(
 			VTuple(VList(Int(2)),
-				   VList(Str("mikio"))))
+				   VList(Str("Martin"))))
 	}
 	"filter arrow" in {
-	  ((staffs >>> Filter(isHokari) >>> 
+	  ((staffs >>> Filter(isGuido) >>> 
 		 Tuple(staffId ,name,subname)
 	   ).queryExp.eval().toSet) === 
 	  Set(
 	   VTuple(VList(Int(1)),
-			  VList(Str("hokari")),
-			  VList(Str("hokari"),Str("mikio"))
+			  VList(Str("Guido")),
+			  VList(Str("Guido"),Str("Martin"))
 			))
 	}
   }
 	"filter bossname subname" in {
-	  // ((staffs >>> Filter(isMikio) >>> Tuple(
+	  // ((staffs >>> Filter(isMartin) >>> Tuple(
 	  // 	staffId
 	  // 	,name
 	  // 	,bossname
@@ -105,17 +158,17 @@ if(false){
 	  )).queryExp//.eval().toSet == 
 		Set(
 		  VTuple(VList(Int(1)),
-				 VList(Str("hokari")),
-				 VList(Str("hokari")),
-				 VList(Str("hokari"))), 
+				 VList(Str("Guido")),
+				 VList(Str("Guido")),
+				 VList(Str("Guido"))), 
 		  VTuple(VList(Int(3)),
-				 VList(Str("keiko")),
-				 VList(Str("mikio")),
+				 VList(Str("Larry")),
+				 VList(Str("Martin")),
 				 VList()), 
 		  VTuple(VList(Int(2)),
-				 VList(Str("mikio")),
-				 VList(Str("hokari")),
-				 VList(Str("hokari"))))
+				 VList(Str("Martin")),
+				 VList(Str("Guido")),
+				 VList(Str("Guido"))))
 	  0 === 0
 	}
   }

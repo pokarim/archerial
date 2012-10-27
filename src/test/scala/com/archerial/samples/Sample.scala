@@ -26,10 +26,24 @@ object SampleData{
 	import anorm._ 
 	import com.archerial._
 	import RawValImplicits._
-	Tables.staff.insertRows(
-	  List("age"-> 15, "name"-> "hokari", "dept_id" -> 1, "boss_id" -> 1),
-	  List("age"-> 16, "name"-> "mikio", "dept_id" -> 1, "boss_id" -> 1),
-	  List("age"-> 17, "name"-> "keiko", "dept_id" -> 2, "boss_id" -> 2))
+	import RawVal.Null
+	// Tables.staff.insertRows(
+	//   List("age"-> 15, "name"-> "hokari", "dept_id" -> 1, "boss_id" -> Null,"height" -> 170),
+	//   List("age"-> 16, "name"-> "mikio", "dept_id" -> 1, "boss_id" -> 1,"height" -> 160),
+	//   List("age"-> 17, "name"-> "keiko", "dept_id" -> 2, "boss_id" -> 2,"height" -> 150))
+
+    Tables.staff.insertRows(
+      List("id"-> 1, "name"-> "Guido", "boss_id" -> Null,
+		   "height" -> 170),
+      List("id"-> 2, "name"-> "Martin", "boss_id" -> 1,
+		   "height" -> 160),
+      List("id"-> 3, "name"-> "Larry", "boss_id" -> 2,
+		   "height" -> 150)
+      ,List("id"-> 4, "name"-> "Rich", "boss_id" -> 1,
+		   "height" -> 180
+		 )
+    )
+
 	Tables.dept.insertRows(
 	  List("name"-> "kaihatu", "area_id" -> 1 ),
 	  List("name"-> "kenkyu",  "area_id" -> 1))
@@ -53,7 +67,9 @@ object SampleData{
 	Tables.order.insertRows(
 	  List("memo"-> "AA", "staff_id" -> 2),
 	  List("memo"-> "BB", "staff_id" -> 2),
-	  List("memo"-> "CC", "staff_id" -> 3))
+	  List("memo"-> "CC", "staff_id" -> 3),
+	  List("memo"-> "DD", "staff_id" -> RawVal.Null)
+	)
 
 	Tables.orderItem.insertRows(
 	  List("order_id"-> 1,"product_id"-> 1,"qty" -> 3),

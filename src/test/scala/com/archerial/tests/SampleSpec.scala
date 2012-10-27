@@ -79,9 +79,6 @@ class SampleSpec extends Specification {
     val staffs = AllOf(Id)
     
     val exp = (staffs >>> Filter(boss >>> name =:= "Guido") >>> name).queryExp
-    pprn(exp)
-    pprn(QueryExpTools.getQueryExps(Left(exp)))
-    //exp.eval()
 
     staffs.eval().prettyJsonString ===
       """[ 1, 2, 3, 4 ]"""
@@ -160,8 +157,41 @@ class SampleSpec extends Specification {
   "Subordinates" : [ "Martin", "Rich" ]
 } ]"""
 
-	Sum(staffs >>> height).eval().prettyJsonString === 
-	  "[ 660 ]"
+	 Sum(staffs >>> height).eval().prettyJsonString === 
+	   "[ 660 ]"
+
+	 Sum(staffs >>> sub >>> height).eval().prettyJsonString ===
+	   "[ 490 ]"
+
+
+
+	{staffs >>> Sum(sub >>> height)}.eval().prettyJsonString ===
+	   "[ 340, 150, 0, 0 ]"
+
+	{staffs >>> sub >>> Sum(height)}.eval().prettyJsonString //===
+	   "[ 340, 150, 0, 0 ]"
+
+	{staffs >>> NamedTuple(
+	  "Name" -> name,
+	  "Sum" -> Sum(sub >>> height))}.eval().prettyJsonString ===
+			  """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "Guido" ],
+  "Sum" : [ 340 ]
+}, {
+  "__id__" : [ 2 ],
+  "Name" : [ "Martin" ],
+  "Sum" : [ 150 ]
+}, {
+  "__id__" : [ 3 ],
+  "Name" : [ "Larry" ],
+  "Sum" : [ 0 ]
+}, {
+  "__id__" : [ 4 ],
+  "Name" : [ "Rich" ],
+  "Sum" : [ 0 ]
+} ]"""
+
 
 	{staffs >>> Filter(name =:= Const("Guido")) >>>
 		  NamedTuple(
@@ -180,6 +210,7 @@ class SampleSpec extends Specification {
   } ],
   "Sum" : [ 340 ]
 } ]"""
+
 
 	0===0
 

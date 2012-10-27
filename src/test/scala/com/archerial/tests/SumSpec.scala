@@ -47,8 +47,9 @@ class SumSpec extends Specification {
 	SampleData.insertSampleData
 	val boss = Staff.boss
 	val sub = ~boss
-	val staff = AllOf(Staff.Id)
+	val staffs = AllOf(Staff.Id)
 	val name = Staff.name
+	val height = Staff.height
 	val supname = boss >>> name
 	val subname = sub >>> name
 	val staffId = Staff.Id.id
@@ -63,6 +64,10 @@ class SumSpec extends Specification {
 		  Order.Id.id,
 		  Order.orderItems >>> OrderItem.product >>> Product.name)}
 
+
+"select A.id, B.id, sum(B.height) from staff as A left join staff as B on A.id = B.boss_id group by B.id"
+
+"select A.id, B.id, sum(B.height) from staff as A left join staff as B on A.id = B.boss_id group by B.id"
 	  val sum2 = {
 		AllOf(Staff.Id) >>>
 		Tuple(
@@ -74,14 +79,6 @@ class SumSpec extends Specification {
 
 	  // val exp2 = sum1.queryExp
 	  // val exp = sum2.queryExp
-val exp_ = 	  	  (staff >>> 
-				    //Filter(staffId =:= Const(Int(2)))>>>
-				   Tuple(
-		staffId
-		//,name
-		//,boss >>> name
-		,boss >>> Filter(boss >>> name =:= name) >>> name
-	  )).queryExp
 
 
 
@@ -115,32 +112,98 @@ val exp_ = 	  	  (staff >>>
 Sum(AllOf(Order.Id) )
 		  // AllOf(Order.Id) >>> Tuple(Order.Id.id,
 		  // 						  Sum(Order.Id.id))
+
+
+		{AllOf(Order.Id) >>> 
+  		 Sum(Order.orderItems >>> OrderItem.qty)}
+		//{AllOf(Order.Id) }
+		{AllOf(Order.Id) >>> 
+  		 Order.orderItems >>> Sum(OrderItem.qty)}
+
+
+{staffs >>> sub >>> Sum(height)}
+{staffs >>> Sum(sub >>> height)}
+	Sum(staffs >>> sub >>> height) 
+	Sum(staffs  >>> height)
+
+	//Sum(staffs >>>  height)
+//		staffs >>> (height * Const(Int(10)))
+
 	  }
 	  //pprn(sum1.eval())
 	  val exp = arr.queryExp
-	  pprn(exp.eval(SimpleGenTrees.gen))
-	  pprn(exp.eval(SimpleGenTrees.splitToPieces))
-	  if(false){
+	  // pprn(exp.eval(SimpleGenTrees.gen))
+	  // pprn(exp.eval(SimpleGenTrees.splitToPieces))
+	  if(true){
 		val trees = {
 		  SimpleGenTrees.gen(exp)
-		  SimpleGenTrees.splitToPieces(exp)
+		  //SimpleGenTrees.splitToPieces(exp)
 		}
-		val tree= trees.head
 		// pprn("tableNodeList",exp.tableNodeList)
-		 pprn("trees:",trees)
-//		 pprn("eval:",exp.eval())
+		pprn("exp",exp)
+		// pprn("exp.tableNodeList",exp.tableNodeList)
 
+//		 pprn("eval:",exp.eval())
+		pprn("dp:",QueryExpTools.directParents(Left(exp)))
+		pprn("tableNodeList",exp.tableNodeList)
+		for (t <- exp.tableNodeList)
+		  pprn((t,t.dependentParents))
 		val colInfo = TreeColInfo(
 		  exp.col2table, //OM
 		  trees)
+		// val tree = trees(1)
+		val ts = QueryExpTools.getContainTables(Right(trees.head.getAllTableExps.toSeq))
+		pprn("ts",ts)
+
+		// val ts1 = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
+		// pprn("ts",ts1)
+		
+		 pprn("trees:",trees)
+		//pprn("colInfo.table2col",colInfo.table2col.pairs)
 		val getter = RowsGetter(colInfo)
-		//(getter.t2c2v2r)
+		val tableExps = trees.head.getAllTableExps.toSeq
+		val tree = trees.head
+		val cols = tree.getColExps(colInfo)
+		val select = SelectGen.gen2(tree.depTables,cols,Nil)
+		pprn("tree.depTables",tree.depTables)
+		pprn("cols;",cols)
+		pprn(select.getSQL(None))
+		pprn()
 		//pprn(colInfo.table2col.pairs)
-		  val vs = exp.eval(
-		    UnitTable.pk,
-		    List(UnitValue),
-		    getter)
-		 pprn(vs)
+		// pprn(exp.col2table.pairs)
+		// pprn(exp.colList)
+		pprn(QueryExpTools.colNodeList(exp))
+		//trees(1).getColExps(colInfo)
+		pprn(exp.eval())
+
+
+	//val ts = QueryExpTools.getContainTables(Right(tableExps))
+
+			//getter.t2c2v2r
+		//pprn("colNodeList(exp)",QueryExpTools.colNodeList(exp))
+		// pprn("tree.getAllTableExps",tree.getAllTableExps)
+
+
+		  // val vs = exp.eval(
+		  //   UnitTable.pk,
+		  //   List(UnitValue),
+		  //   getter)
+
+		  // pprn(vs)
+
+		// pprn("exp:",exp)
+		// pprn(exp.col2table.pairs)
+		// pprn("colnodelis:",QueryExpTools.colNodeList(exp))
+		// for (qt <-  QueryExpTools.getQueryExps(Left(exp))){
+		//   pprn()
+		//   pprn("qt:",qt)
+		//   pprn(QueryExpTools.directColNodes(qt))
+		// }
+		//pprn(getter.t2c2v2r)
+
+
+		// pprn(colInfo.table2col.pairs)
+
 
 	  }
 	  0 === 0

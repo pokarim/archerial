@@ -92,7 +92,9 @@ object Mappers{
 	
     val Name = ColObject("name")
     val Age = ColObject("age")
+    val Height = ColObject("height")
     val name = ColArrow(Id, Name, "id","name")
+    val height = ColArrow(Id, Height)
     val id2id = ColArrow(Id, Id, "id","id")
     val age = ColArrow(Id, Age, "id","age")
     val dept = staff2dept
