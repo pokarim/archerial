@@ -75,10 +75,17 @@ ColArrowは、入力元の定義域となるColObjectと
     val name = ColArrow(Id, Name) // Id -> Name
     val height = ColArrow(Id, Height)
 ```
+nameの中身は概念的には例えば次のようなデータを持ちます。
+
+```scala
+Set(1 -> "Guido",
+    2 -> "Martin",
+    3 -> "Larry",
+    4 -> "Rich")
+```
 
 ここで定義したものはstaffテーブルのidカラムとnameカラムの２列のみからなるテーブルのようなものです。
-次のように、自己結合外部キーと関連して、入力元と出力先のオブジェクトが
-同一となる場合は、各カラム名も指定します。
+次のように、自己結合外部キーと関連して、入力元と出力先のオブジェクトが同一となる場合は、各カラム名も指定します。
 
 ```scala
     val boss = ColArrow(Id, Id, staffTable, "id", "boss_id") // Id -> Id
@@ -92,55 +99,71 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
     val staffs = AllOf(Id) // Unit -> Id
 ```
 
+このAllOf(Id)の中身は、概念的には例えば次のようになります。
+
+```scala
+Set(Unit -> 1,
+    Unit -> 2,
+    Unit -> 3,
+    Unit -> 4)
+```
+このクエリーを実行するにはeval()メソッドを呼び出します。
+
 ```javascript
     staffs.eval().prettyJsonString ===
       """[ 1, 3, 2, 4 ]"""
 
+```
+eval()メソッドは、UnitObjectを入力元とするArrowに定義され、
+関係の第二成分の多重集合を戻します。
+
+```javascript
+
     {staffs >>> name}.eval().prettyJsonString ===
-      """[ "hokari", "keiko", "mikio", "manabu" ]"""
+      """[ "Guido", "Larry", "Martin", "Rich" ]"""
 
-    {staffs >>> Filter(name =:= "hokari") >>> name
+    {staffs >>> Filter(name =:= "Guido") >>> name
            }.eval().prettyJsonString ===
-             """[ "hokari" ]"""
+             """[ "Guido" ]"""
 
-    {staffs >>> Filter(boss >>> name =:= "hokari") >>> name
+    {staffs >>> Filter(boss >>> name =:= "Guido") >>> name
            }.eval().prettyJsonString ===
-             """[ "mikio", "manabu" ]"""
+             """[ "Martin", "Rich" ]"""
 
     {staffs >>> boss }.eval().prettyJsonString ===
       """[ 2, 1, 1 ]"""
     
     {staffs >>> boss >>> name}.eval().prettyJsonString ===
-      """[ "hokari", "hokari", "mikio" ]"""
+      """[ "Guido", "Guido", "Martin" ]"""
 
     {staffs >>> NamedTuple("Name" ->name)}.eval().prettyJsonString ===
       """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ]
+  "Name" : [ "Guido" ]
 }, {
   "__id__" : [ 3 ],
-  "Name" : [ "keiko" ]
+  "Name" : [ "Larry" ]
 }, {
   "__id__" : [ 2 ],
-  "Name" : [ "mikio" ]
+  "Name" : [ "Martin" ]
 }, {
   "__id__" : [ 4 ],
-  "Name" : [ "manabu" ]
+  "Name" : [ "Rich" ]
 } ]"""
 
-    (staffs >>> Filter(name =:= "hokari") >>>
+    (staffs >>> Filter(name =:= "Guido") >>>
      NamedTuple("Name" -> name,
                 "Boss" -> (boss >>> name),
                 "Subordinates" -> (~boss >>> name)
               )).eval().prettyJsonString ===
                 """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ],
+  "Name" : [ "Guido" ],
   "Boss" : [ ],
-  "Subordinates" : [ "mikio", "manabu" ]
+  "Subordinates" : [ "Martin", "Rich" ]
 } ]"""
 
-    {staffs >>> Filter(name =:= Const("hokari")) >>>
+    {staffs >>> Filter(name =:= Const("Guido")) >>>
              NamedTuple("Name" -> name,
                         "Boss" -> (boss >>> name),
                         "Subordinates" -> 
@@ -149,50 +172,56 @@ Idを取るArrowを定義します。これも、２列のテーブルのよう�
    }.eval().prettyJsonString ===
                         """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ],
+  "Name" : [ "Guido" ],
   "Boss" : [ ],
   "Subordinates" : [ {
     "__id__" : [ 2 ],
-    "Name" : [ "mikio" ]
+    "Name" : [ "Martin" ]
   }, {
     "__id__" : [ 4 ],
-    "Name" : [ "manabu" ]
+    "Name" : [ "Rich" ]
   } ]
 } ]"""
 
 
 	{staffs >>> 
-	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
+	Filter(Any(sub >>> name  =:= Const(Str("Rich"))))>>>
 	NamedTuple(
 	  "Name" -> name,
 	  "Subordinates" -> (sub >>> name))}.eval().prettyJsonString === """[ {
   "__id__" : [ 1 ],
-  "Name" : [ "hokari" ],
-  "Subordinates" : [ "mikio", "manabu" ]
+  "Name" : [ "Guido" ],
+  "Subordinates" : [ "Martin", "Rich" ]
 } ]"""
 
 ```
-#### 集計関数の例
+#### キーごとの集計：SUM
 
-集計関数としてSumの使い方。
-staffのheightの合計を求めるArrowは以下のようになります。
+Sumは例えば、次のようなペアの集合から
 
 ```scala
+Set(1 -> 3,
+	1 -> 5,
+	2 -> 2,
+	2 -> 3,
+	2 -> 4)
+```
+次のようなペアの集合を生成します。
 
-	Sum(staffs >>> height).eval().prettyJsonString === 
-	  "[ 660 ]"
+```scala
+Set(1 -> 8, // 8 == 3 + 5
+	2 -> 9) // 9 == 2 + 3 + 4
 
 ```
+SQLにおける"select sum(..) .. group by ..;" に相当します。
+第一成分でグループ化し、第二成分の合計を得るわけです。
 
-#### Group By 相当の例
-
-staffs >>> height は、UnitからIntへのArrowでした。
-次は、各Staffについて、その部下（Subordinates）の身長(height)の合計を求めます。
+各Staffについて、その部下（Subordinates）の身長(height)の合計を求めるのであれば、次のようになります。
 部下の身長は
 sub >>> height
-であり、その合計は、
+であり、
 Sum(sub >>> height)
-になります。
+は、各staffと、その部下のheightの合計の間の二項関係を表します。
 これをすべてのStaffについて求める式は、
 {staffs >>> Sum(sub >>> height)}
 です。
@@ -201,6 +230,31 @@ Sum(sub >>> height)
 	{staffs >>> 
   	 Sum(sub >>> height)}.eval().prettyJsonString ===
 	   "[ 340, 150, 0, 0 ]"
+
+```
+
+#### 全体の集計
+キーごとの合計でなく、全体を合計を得たい場合は、
+ただひとつの値をもつ集合であるUnitObjectをドメインにもつ関係の合計を取ります。
+staff全員のheightの合計を求めるArrowは以下のようになります。
+
+```scala
+
+	Sum(staffs >>> height).eval().prettyJsonString === 
+	  "[ 660 ]"
+
+```
+(staffs >>> height)は次のような情報を持ちます。
+```scala
+Set(Unit -> 170,
+	Unit -> 160,
+	Unit -> 150,
+	Unit -> 180)
+```
+Sum(staffs >>> height) の結果はつぎのようになります。
+
+```scala
+Set(Unit -> 660) //660  == 170 + 160 + 150 + 180
 
 ```
 
