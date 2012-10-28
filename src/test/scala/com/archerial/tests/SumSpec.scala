@@ -38,10 +38,11 @@ class SumSpec extends Specification {
   "The 'Hello world' string" should {
 	val h2driver = Class.forName("org.h2.Driver")
 	val mysqldriver = Class.forName("com.mysql.jdbc.Driver")
-	implicit val con = 
-	  DriverManager.getConnection("jdbc:h2:mem:sumspec", "", "")
-	// implicit val con = 
-	//   DriverManager.getConnection("jdbc:mysql://localhost/test02?user=hokari&password=")
+	implicit val con = {
+	 // DriverManager.getConnection("jdbc:h2:mem:sumspec", "", "")
+
+	  DriverManager.getConnection("jdbc:mysql://localhost/test02?user=hokari&password=")
+	}
 	SampleData.tables.drop_all()
 	SampleData.createTables 
 	SampleData.insertSampleData
@@ -122,13 +123,27 @@ Sum(AllOf(Order.Id) )
 
 
 {staffs >>> sub >>> Sum(height)}
-{staffs >>> Sum(sub >>> height)}
 	Sum(staffs >>> sub >>> height) 
 	Sum(staffs  >>> height)
 
 	//Sum(staffs >>>  height)
 //		staffs >>> (height * Const(Int(10)))
 
+		AllOf(Order.Id) >>> Tuple(
+		  Order.Id.id
+		  ,Sum(Order.orderItems >>> OrderItem.qty)
+		   ,Sum(Order.staff >>> ~boss >>> Order.Id.id)
+		  ,Sum(Order.orderItems >>> 
+		  	  OrderItem.product >>>
+		  	  Product.price)
+		  ,Order.staff >>> Staff.name
+		  ,Order.orderItems >>> OrderItem.qty
+		)
+
+{staffs >>> Sum(sub >>> height)}
+	//Sum(staffs  >>> height)
+	//Sum(staffs >>> sub >>> height) 
+complex1
 	  }
 	  //pprn(sum1.eval())
 	  val exp = arr.queryExp
@@ -144,17 +159,15 @@ Sum(AllOf(Order.Id) )
 		// pprn("exp.tableNodeList",exp.tableNodeList)
 
 //		 pprn("eval:",exp.eval())
-		pprn("dp:",QueryExpTools.directParents(Left(exp)))
-		pprn("tableNodeList",exp.tableNodeList)
-		for (t <- exp.tableNodeList)
-		  pprn((t,t.dependentParents))
+		//pprn("dp:",QueryExpTools.directParents(Left(exp)))
+		//pprn("tableNodeList",exp.tableNodeList)
+		// for (t <- exp.tableNodeList)
+		//   pprn((t,t.dependentParents))
 		val colInfo = TreeColInfo(
 		  exp.col2table, //OM
 		  trees)
 		// val tree = trees(1)
 		val ts = QueryExpTools.getContainTables(Right(trees.head.getAllTableExps.toSeq))
-		pprn("ts",ts)
-
 		// val ts1 = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
 		// pprn("ts",ts1)
 		
@@ -162,12 +175,12 @@ Sum(AllOf(Order.Id) )
 		//pprn("colInfo.table2col",colInfo.table2col.pairs)
 		val getter = RowsGetter(colInfo)
 		val tableExps = trees.head.getAllTableExps.toSeq
-		val tree = trees.head
+		val tree = trees(0)
 		val cols = tree.getColExps(colInfo)
 		val select = SelectGen.gen2(tree.depTables,cols,Nil)
-		pprn("tree.depTables",tree.depTables)
-		pprn("cols;",cols)
-		pprn(select.getSQL(None))
+		//pprn("tree.depTables",tree.depTables)
+		//pprn("cols;",cols)
+		//pprn(select.getSQL(None))
 		pprn()
 		//pprn(colInfo.table2col.pairs)
 		// pprn(exp.col2table.pairs)
@@ -203,7 +216,14 @@ Sum(AllOf(Order.Id) )
 
 
 		// pprn(colInfo.table2col.pairs)
+		if (true)
+{
+	// import anorm.SQL
 
+	//  val r = SQL("select first(id) from staff ")()
+	//  pprn(r)
+1
+}
 
 	  }
 	  0 === 0
