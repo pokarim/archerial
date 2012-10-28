@@ -70,6 +70,7 @@ case class SelectGen(rootTable:TableExp,/*tree:TableTree, */ colExps: List[ColEx
 	  else gls.head//.getSQL()
 	  
 	val sql = "select %s from %s%s%s" format(cs,ts,ws,gs)
+	pprn(sql)
 	(sql,ps.map((x) => idMap.constMap(x) -> x.rawVal))
   }
 

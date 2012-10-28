@@ -50,19 +50,21 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 	val directChildren = 
 	  children.filter(!getparents(_).exists(!set(_)))
 	val isEmp = table2col(root).isEmpty
-	if (directChildren.length == 1 && 1 == children.length
-		&& isEmp && children.head.rowMulFactor != Group && 
-		(isDirect || (
-		  children.head.rowMulFactor != LtOne
-		  
-)
-		)
-	  ){
-	  for {xs <- forS(children)(apply(_, isDirect && isEmp))}
-	  yield (TableTree(root,xs.map(_._1).toList), xs.flatMap(_._2))
-	} else {
-	  splitDirectChildren(root, directChildren,isDirect && isEmp)
-	}
+	val nextIsDirect = (isDirect 
+						&& isEmp 
+						&& children.length == 1
+						&& directChildren.length == 1)
+	// if (directChildren.length == 1 
+	// 	&& 1 == children.length
+	// 	&& isEmp
+	// 	&& (isDirect || children.head.rowMulFactor != Group )
+	// 	&& (isDirect || children.head.rowMulFactor != LtOne)
+	//   ){
+	//   for {xs <- forS(children)(apply(_, nextIsDirect))}
+	//   yield (TableTree(root,xs.map(_._1).toList), xs.flatMap(_._2))
+	// } else {
+	  splitDirectChildren(root, directChildren,nextIsDirect)
+	// }
 
   }
   
@@ -73,9 +75,9 @@ case class SimpleGenTrees(table2col:Rel[TableExp,ColExp], table2children : TreeR
 
   def apply(root:Tbx, isDirect:Boolean=true):State[TbxSet, (TTree, TTrees)] = {
 	val children = table2children(root)
-	// if (root.rowMulFactor == RowMulFactor.Group){
-	//   for (_ <- init) yield (oneTree(root),Nil)
-	// }else 
+	if (root.rowMulFactor == RowMulFactor.Group){
+	  for (_ <- init) yield (oneTree(root),Nil)
+	}else 
 	  if (children.isEmpty){
 	  for {_ <- modify[TbxSet](_ + root)}
 	  yield (TableTree(root,Nil),Nil)
