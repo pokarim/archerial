@@ -21,6 +21,7 @@ import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 
 sealed trait ColExp {
+  def isAggregateFun:Boolean = false
   def normalize = this
   def constants:Seq[ConstantQueryExp] = Nil
   def getSQL(map: TableIdMap):String
@@ -30,8 +31,8 @@ sealed trait ColExp {
 	case x:Long => RawVal.Long(x)
 	case x:String => RawVal.Str(x)
 	case x:Boolean => RawVal.Bool(x)
-case x:java.math.BigDecimal => 
-  RawVal.Long(scala.math.BigDecimal(x).toLong)
+	case x:java.math.BigDecimal => 
+	  RawVal.Long(scala.math.BigDecimal(x).toLong)
   }
   def parse2Val(x:Any):Value = parse(x) match{
 	case x: RawVal => Val(x,1)
@@ -64,6 +65,7 @@ case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
 }
 
 case class QExpCol(table:TableExp,exp:QueryExp) extends ColExp{
+  override def isAggregateFun:Boolean = exp.isInstanceOf[SumQExp]
   override def constants:Seq[ConstantQueryExp] = exp.constants
   def getTables:List[TableExp] = List(table) 
   def getColNodes:List[ColNode] = Nil

@@ -33,6 +33,8 @@ object TableNodeType extends Enumeration {
 }
 
 sealed trait TableExp {
+  def groupKey:Seq[ColExp] = Nil
+
   def isGrouped:Boolean// = false
   def getTableType:TableNodeType.Value = this match {
 	case _:WhereNode => TableNodeType.Where
@@ -113,6 +115,7 @@ case class TableNode(table: Table,isGrouped:Boolean=false) extends TableExp{
 }
 
 case class GroupByNode(tableNode:TableExp,key:Col) extends TableExp{
+  override def groupKey:Seq[ColExp] = List(key.colNode)
   def rowMulFactor:RowMulFactor.Value = RowMulFactor.Group
 
   override def isGrouped:Boolean = true

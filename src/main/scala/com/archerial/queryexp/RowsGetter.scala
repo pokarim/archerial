@@ -33,7 +33,81 @@ object `package` {
   type Tt2R = Map[TableTree,Seq[Row]]
 }
 
-case class RowsGetter(colInfo:TreeColInfo)(implicit val con: java.sql.Connection){
+object RelGetter{
+  def pairs2cols(ps:Seq[(ColExp,ColExp)]):Seq[ColExp] =
+	ps.flatMap{case (x,y)=> Seq(x,y)}.distinct
+
+
+  def getPKs(x:ColExp,y:ColExp):Seq[ColExp] = {
+	//t.allTableExpsWithUnit), p))
+	val xt = x.tables.flatMap(QueryExpTools.getTableExps(_)).toSet
+	val yt = y.tables.flatMap(QueryExpTools.getTableExps(_)).toSet
+	val ts = (yt -- xt) ++ (x.tables ++ y.tables).toSet
+	//ts.filter(!_.isGrouped).
+	ts.map(_.pk).toSeq
+  }
+  def getDict(exp:QueryExp,trees:Seq[TableTree])(implicit con: java.sql.Connection):Map[(ColExp,ColExp),Map[Value,Seq[Value]]] = {
+	val t2p = RelGetter.tree2pair(exp,trees)
+	
+	val dicts = for {tree <- trees}
+	yield {
+	  val isGrouped = !tree.tableExps.forall(!_.isGrouped)
+	  val groupKeys = tree.tableExps.flatMap(_.groupKey).toSet
+
+	  val ps = t2p(tree)
+	  val ks = for {(x,y) <- ps;c <- getPKs(x,y)}yield c
+	  
+	  val cs = (ks ++pairs2cols(ps)).filter(_ != UnitTable.pk).distinct.filter((c) => 
+		!isGrouped || 
+        groupKeys(c) ||
+		c.isAggregateFun)
+	  if (cs.isEmpty) 
+		Map[(ColExp,ColExp),Map[Value,Seq[Value]]]()
+	  else{
+	  val select = SelectGen.gen2(
+		tree.depTables,cs
+	   	,Nil)
+	  val rows = select.getRows(List(Row()) )
+	  val dict = (for {(x,y) <- ps} yield {
+		val pks = getPKs(x,y)
+		val rows2:Seq[Row] = distinct(rows){
+		  (row)=>
+			(for {pk <- List(x,y) ++ pks
+				  if row.contains(pk) // TODO
+				  val v = row.d(pk)} 
+			 yield pk -> v).toSet}
+		(x,y) -> groupTuples(for {r <- rows2} yield r.d(x) -> r.d(y))
+	  }).toMap
+	  dict
+	  }
+	}
+	dicts.reduceLeft{(x,y) => x ++ y}
+  }
+
+  def tree2pair(qexp:QueryExp,trees:Seq[TableTree]):Map[TableTree,Seq[(ColExp,ColExp)]]={
+	val pairs = QueryExpTools.getCols(qexp)
+	val (ptail, map) = trees.foldLeft(
+	  pairs.toSet -> 
+	  Map[TableTree,Seq[(ColExp,ColExp)]]()){
+	  case ((ps,map),t:TableTree)=> {
+		val pss = groupTuples(
+		  for {p@(x,y) <- ps.toSeq}
+		  yield (
+			{x.tables ++ y.tables}.toSet.subsetOf(
+			  t.allTableExpsWithUnit), p))
+		(pss.getOrElse(false,Nil).toSet, 
+		 map ++ Map(t->pss.getOrElse(true,Nil)))
+	  }}
+	assert(ptail.isEmpty)
+	map
+  }
+}
+case class RelGetter(qexp:QueryExp,trees:Seq[TableTree]){
+}
+
+case class RowsGetter(colInfo:TreeColInfo,exp:QueryExp)(implicit val con: java.sql.Connection){
+
+  val dict = RelGetter.getDict(exp,colInfo.trees)
   import RowTool.groupByCol
   def getmap() = {
 	colInfo.trees.map(

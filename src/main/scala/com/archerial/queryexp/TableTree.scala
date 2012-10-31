@@ -30,6 +30,8 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 case class TableTree(node:TableExp, children:List[TableTree]){
   def getAllTableExps = tableExps
    lazy val allTableExps = tableExps.toSet//getAllTableExps.toSet
+   lazy val allTableExpsWithUnit = 
+	 tableExps.toSet ++ depTables + UnitTable
   def contains(node:TableExp) = allTableExps.contains(node)
 
   lazy val tableExps :Stream[TableExp] = {

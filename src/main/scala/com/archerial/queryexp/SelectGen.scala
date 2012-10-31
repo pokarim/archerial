@@ -26,8 +26,6 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 
 case class SelectGen(rootTable:TableExp,/*tree:TableTree, */ colExps: List[ColExp], /* colExps4Row: List[ColExp], */ tableExps:List[TableExp], whereConds:List[QueryExp],whereList:List[TableExp], groupList:List[TableExp], outerTableIdMap:Option[TableIdMap]){
   assert(! tableExps.isEmpty, "require nonEmpty")
-  //assert(tree.node == tableExps.head, "hoge root")
-  //def rootTable:TableExp = tree.node
   lazy val _tableIdMap = TableIdMap.genTableIdMap(tableExps,outerTableIdMap)
 
   val table_alias:Seq[(TableExp,TableExp)] =// Nil
@@ -70,7 +68,6 @@ case class SelectGen(rootTable:TableExp,/*tree:TableTree, */ colExps: List[ColEx
 	  else gls.head//.getSQL()
 	  
 	val sql = "select %s from %s%s%s" format(cs,ts,ws,gs)
-	pprn(sql)
 	(sql,ps.map((x) => idMap.constMap(x) -> x.rawVal))
   }
 

@@ -146,4 +146,21 @@ object QueryExpTools{
 	case _ => Nil
   }	
 
+  def getCols(x:QueryExp, key:ColExp=UnitTable.pk)
+  :Stream[(ColExp,ColExp)] = 
+	x match {
+	  case x:Columnable => Stream(key -> x.qexpCol)
+	  case Col(colNode) => Stream(key ->  colNode)
+	  case NTuple(exps) =>
+		for {(_,k) <- getCols(exps.head, key)
+			 vexp <- exps.tail
+			 x <- (key,k) #:: getCols(vexp, k)} 
+		yield x
+	  case NamedTupleQExp(keycol, exps) => 
+		for {(_,k) <- getCols(keycol, key)
+			 (_, vexp) <- exps
+			 x <- (key,k) #:: getCols(vexp,k)}
+		yield x
+	  case _ => Stream.Empty
+	}
 }

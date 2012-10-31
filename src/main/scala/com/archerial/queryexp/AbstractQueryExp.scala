@@ -53,7 +53,7 @@ trait AbstractQueryExp extends AbstractQueryExp4Tree{
   def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
 	val trees = sp(this)
 	val colInfo = TreeColInfo(col2table,trees)
-	val getter = RowsGetter(colInfo)(connection)
+	val getter = RowsGetter(colInfo,this)(connection)
 	val vs = eval(
 	  UnitTable.pk,
 	  List(UnitValue),
