@@ -124,10 +124,9 @@ class AllArrowSpec extends Specification {
 		val colInfo = TreeColInfo(
 		  exp.col2table, //OM
 		  trees)
-		val getter = RowsGetter(colInfo)
+		val getter = RowsGetter(colInfo,exp)
 		pprn(exp)
 		//pprn(exp.tableNodeList)
-		pprn(getter.t2c2v2r)
 		
 		val vs = exp.eval(
 	  	  UnitTable.pk,

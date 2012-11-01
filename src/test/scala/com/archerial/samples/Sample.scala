@@ -34,14 +34,13 @@ object SampleData{
 
     Tables.staff.insertRows(
       List("id"-> 1, "name"-> "Guido", "boss_id" -> Null,
-		   "height" -> 170),
+		   "height" -> 170, "sex" -> "male"),
       List("id"-> 2, "name"-> "Martin", "boss_id" -> 1,
-		   "height" -> 160),
+		   "height" -> 160, "sex" -> "male"),
       List("id"-> 3, "name"-> "Larry", "boss_id" -> 2,
-		   "height" -> 150)
+		   "height" -> 150, "sex" -> "male")
       ,List("id"-> 4, "name"-> "Rich", "boss_id" -> 1,
-		   "height" -> 180
-		 )
+		   "height" -> 180, "sex" -> "female")
     )
 
 	Tables.dept.insertRows(

@@ -74,61 +74,66 @@ class SampleSpec2 extends Specification {
     val allNames = staffs >>> NamedTuple("Name" ->name)
     //pprn(allNames.eval().prettyJsonString)
 
+	  val sub = ~boss
     val arr = {
 	  staffs >>> boss >>> name
 	  staffs >>> NamedTuple("boss" -> (boss >>> name))
 
-	val sub = ~boss
+	  
+	  {staffs >>> 
+	   Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
+	   NamedTuple(
+		 "Name" -> name,
+		 "Subordinates" -> (sub >>> name))}
+	  
+      (staffs >>> Filter(name =:= "hokari") >>>
+       NamedTuple("Name" -> name,
+                  "Boss" -> (boss >>> name),
+                  "Subordinates" -> (~boss >>> name)
+				))
+	  
+	  {staffs >>> Filter(name =:= Const("hokari")) >>>
+	   NamedTuple("Name" -> name,
+				  "Boss" -> (boss >>> name),
+				  "Subordinates" -> 
+				  (~boss >>> NamedTuple("Name" -> name))
+				)
+	   
+	   
+	   {staffs >>> Filter(name =:= Const("hokari")) >>>
+        NamedTuple("Name" -> name,
+                   "Boss" -> (boss >>> name),
+                   "Subordinates" -> 
+                   (~boss >>> NamedTuple("Name" -> name))
+                 )
+	  }
 
-{staffs >>> 
-	Filter(Any(sub >>> name  =:= Const(Str("manabu"))))>>>
-	NamedTuple(
-	  "Name" -> name,
-	  "Subordinates" -> (sub >>> name))}
 
-    (staffs >>> Filter(name =:= "hokari") >>>
-     NamedTuple("Name" -> name,
-                "Boss" -> (boss >>> name),
-                "Subordinates" -> (~boss >>> name)
-              ))
+//	  staffs >>> boss >>> name
 
-{staffs >>> Filter(name =:= Const("hokari")) >>>
-             NamedTuple("Name" -> name,
-                        "Boss" -> (boss >>> name),
-                        "Subordinates" -> 
-                        (~boss >>> NamedTuple("Name" -> name))
-                      )
-   }
-
-{staffs >>> Filter(name =:= Const("hokari")) >>>
-             NamedTuple("Name" -> name,
-                        "Boss" -> (boss >>> name),
-                        "Subordinates" -> 
-                        (~boss >>> NamedTuple("Name" -> name))
-                      )
-   }
-	}//.eval().prettyJsonString ===
-      """[ "hokari", "hokari", "mikio" ]"""
+	 }//.eval().prettyJsonString ===
+      //"""[ "hokari", "hokari", "mikio" ]"""
+	
+	}
 	val exp = arr.queryExp
-		val trees = SimpleGenTrees.gen(exp)
-		val tree= trees.head
-		pprn("trees:",trees)
-		val colInfo = TreeColInfo(
-		  exp.col2table,
-		  trees)
-		val select = SelectGen.gen(tree,colInfo.tree_col(tree))
-		val (sql, ps) =select.getSQL(None)
-		pprn(sql)
+	val trees = SimpleGenTrees.gen(exp)
+	val tree= trees.head
+	pprn("trees:",trees)
+	val colInfo = TreeColInfo(
+	  exp.col2table,
+	  trees)
+	val select = SelectGen.gen(tree,colInfo.tree_col(tree))
+	val (sql, ps) =select.getSQL(None)
+	pprn(sql)
 
 
-	val getter = RowsGetter(colInfo)
+	val getter = RowsGetter(colInfo,exp)
 	
 	val vs = exp.eval(
 	  UnitTable.pk,
 	  List(UnitValue),
 	  getter)
 	pprn(vs)
-//	pprn(getter.t2c2v2r)
 
 //		pprn(("eval:",exp.eval()))
 	0===0

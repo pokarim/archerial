@@ -91,9 +91,11 @@ object Mappers{
     val Id = StaffId
 	
     val Name = ColObject("name")
+    val Sex = ColObject("sex")
     val Age = ColObject("age")
     val Height = ColObject("height")
     val name = ColArrow(Id, Name, "id","name")
+    val sex = ColArrow(Id, Sex)
     val height = ColArrow(Id, Height)
     val id2id = ColArrow(Id, Id, "id","id")
     val age = ColArrow(Id, Age, "id","age")
