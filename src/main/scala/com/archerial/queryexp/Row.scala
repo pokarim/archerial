@@ -30,6 +30,9 @@ case class Row(map : immutable.Map[ColExp,Value]=Map()){
   def contains(c:ColExp) = (c == UnitColExp || map.contains(c))
   def d(colnode:ColExp) =
 	getDirectValue(colnode)
+
+  def apply(colnode:ColExp) =
+	getDirectValue(colnode)
 	
   def getDirectValue(colnode:ColExp) = {
 	colnode match {

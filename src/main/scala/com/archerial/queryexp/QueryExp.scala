@@ -121,7 +121,7 @@ case class ConstCol(constColExp:ConstantColExp) extends ConstantQueryExp{
 
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter) = 
   ColEvalTool.eval(
-	constColExp, constColExp.table, vcol, values, getter)
+	constColExp, vcol, values, getter)
 
   def value = Val(constColExp.value,1)
   def getDependentCol():Stream[ColExp] = 
@@ -163,7 +163,7 @@ case class Col(colNode: ColNode) extends QueryExp{
 
   override def evalCol(colExp:ColExp):ColExp = colNode
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
-  ColEvalTool.eval(colNode, colNode.table, vcol, values, getter)
+  ColEvalTool.eval(colNode, vcol, values, getter)
 }
 
 case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends QueryExp with TupleExpBase {
@@ -206,7 +206,7 @@ trait Columnable extends QueryExp{
   def root:TableExp
   def qexpCol = QExpCol(root,this)
   def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
-  ColEvalTool.eval(qexpCol, root, vcol, values, getter)
+  ColEvalTool.eval(qexpCol, vcol, values, getter)
   def row2value(row:Row ): Value = row.d(qexpCol)
 
 }
@@ -224,7 +224,7 @@ case class SumQExp(table:GroupByNode,valcol:Col) extends Columnable{
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
 	val t = table//root
 	val vs = ColEvalTool.eval(
-	  qexpCol, t, vcol, values, getter,false)
+	  qexpCol, vcol, values, getter,false)
 	if (vs.isEmpty) 
 	 Seq(Val(RawVal.Int(0)))
 	else

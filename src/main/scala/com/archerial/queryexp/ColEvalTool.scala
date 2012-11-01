@@ -24,37 +24,14 @@ import scala.collection.immutable
 
 object ColEvalTool{
 
-  def eval(colExp:ColExp, table:TableExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): Seq[Value] = {
-	val dict:Map[(ColExp,ColExp),Map[Value,Seq[Value]]] = 
-	  getter.dict
-
-	assert(dict.contains((vcol,colExp)))
+  def eval(colExp:ColExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): Seq[Value] = {
+	assert(getter.dict.contains((vcol,colExp)))
 	val vs = for {x <- values
-		 v <- dict((vcol,colExp))(x)
-		 if !dropNull || v.nonNull	 
-	   } yield v
-	if (true) vs
-	else{
-	  val (pcol,pvalues) =
-		if (colExp == UnitTable.pk  ||
-			getter.t2c2v2r(table).contains(vcol.normalize)
-		  ) (vcol,values)
-		else{
-		  val rootCol = 
-			colExp.tables.head.rootCol.get.asInstanceOf[ColNode]
-		  assert(rootCol != colExp)
-		  val pvals = Col(rootCol).eval(vcol,values,getter)
-		  val pcol2 = Col(rootCol).evalCol(vcol)
-		  (pcol2,pvals)
-		}
-	  val c2v2r = getter.t2c2v2r(table)
-	  for {pv <- pvalues
-		   row <- c2v2r(pcol.normalize).getOrElse(pv,Nil)
-		   if (row.d(table.pk).nonNull);
-		   val v = row.d(colExp)
-		   if !dropNull || v.nonNull}
-	  yield v
-	}}
+				  v <- getter.dict((vcol,colExp))(x)
+				  if !dropNull || v.nonNull	}
+			 yield v
+	vs
+  }
 }
 
 trait TupleExpBase {
