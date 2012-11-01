@@ -109,7 +109,7 @@ class ArrowSpec2 extends Specification {
 	//pprn(staffs.eval())
 	//pprn(ConstantArrow(Int(1)).eval())
 	//pprn(
-	if (true){
+	if (false){
 	val a = staffs >>> Tuple(
 	  staffId,
 	  Const(Int(8)),
@@ -124,8 +124,7 @@ class ArrowSpec2 extends Specification {
 	  val trees = SimpleGenTrees.gen(exp)//splitToPieces(exp)
 	  pprn(trees)
 	  val colInfo = TreeColInfo(exp.col2table,trees)
-	  val getter = RowsGetter(colInfo)
-	  pprn(getter.t2c2v2r)
+	  val getter = RowsGetter(colInfo,exp)
 	  //pprn("table_tree:",colInfo.table_tree.pairs)
 	  val vs = exp.eval(
 	  	UnitTable.pk,
@@ -152,7 +151,7 @@ class ArrowSpec2 extends Specification {
 		Set(
 		  VTuple(VList(Int(2)),
 				 VList(Str("Martin"))))
-	if(true)
+	if(false)
 	{
 	  val arr = AllOf(Staff.Id) >>> Filter(isGuido) >>> 
 		Tuple(staffId ,name,subname)
@@ -167,7 +166,7 @@ class ArrowSpec2 extends Specification {
 	  pprn("FUGa")
 	  
 	  val colInfo = TreeColInfo(exp.col2table,trees)
-	  val getter = RowsGetter(colInfo)
+	  val getter = RowsGetter(colInfo,exp)
 	  //pprn("table_tree:",colInfo.table_tree.pairs)
 	  val vs = exp.eval(
 	  	UnitTable.pk,
@@ -177,9 +176,6 @@ class ArrowSpec2 extends Specification {
 	  val join = trees(2).node
 	  // pprn("where",where)
 	  // pprn("where",QueryExpTools.getTableExps(where))
-	  // pprn(getter.t2c2v2r(trees(0).getAllTableExps(1)))
-
-	  // pprn(getter.t2c2v2r(join))
 	  pprn(vs)
 	  Set(
 	   VTuple(VList(Int(1)),
@@ -283,7 +279,7 @@ class ArrowSpec2 extends Specification {
 	  val exp = arr.queryExp
 	  val trees = SimpleGenTrees.gen(exp)
 	  val colInfo = TreeColInfo(exp.col2table,trees)
-	  val getter = RowsGetter(colInfo)
+	  val getter = RowsGetter(colInfo,exp)
 	  val vs = exp.eval(
 	  	UnitTable.pk,
 	  	List(UnitValue),

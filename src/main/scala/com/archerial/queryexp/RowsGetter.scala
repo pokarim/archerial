@@ -35,7 +35,7 @@ object RowsGetter{
 	val ts = (yt -- xt) ++ x.tables ++ y.tables
 	ts.map(_.pk) ++ List(x,y)
   }
-  def getPair2Col(tree:TableTree,t2p:Map[TableTree,CPairs]):Seq[((ColExp,ColExp),Seq[ColExp])] = {
+  def getPair2Col(tree:TableTree,t2p:Map[TableTree,CPairs]):Seq[(CPair,Seq[ColExp])] = {
 	val isGrouped = !tree.tableExps.forall(!_.isGrouped)
 	val groupKeys = tree.tableExps.flatMap(_.groupKey).toSet
 	val ps = t2p(tree)

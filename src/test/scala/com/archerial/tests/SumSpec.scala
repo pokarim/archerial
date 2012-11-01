@@ -50,6 +50,7 @@ class SumSpec extends Specification {
 	val sub = ~boss
 	val staffs = AllOf(Staff.Id)
 	val name = Staff.name
+	val sex = Staff.sex
 	val height = Staff.height
 	val supname = boss >>> name
 	val subname = sub >>> name
@@ -144,6 +145,17 @@ Sum(AllOf(Order.Id) )
 	//Sum(staffs  >>> height)
 	//Sum(staffs >>> sub >>> height) 
 complex1
+
+		AllOf(Staff.Sex) >>> NamedTuple("name" ->
+		  (~Staff.sex >>> name))
+
+
+    {staffs >>> boss }
+//      """[ 1, 2, 1 ]"""
+
+Sum(staffs >>> height)
+
+//staffs >>> 
 	  }
 	  //pprn(sum1.eval())
 	  val exp = arr.queryExp
@@ -154,8 +166,13 @@ complex1
 		  SimpleGenTrees.gen(exp)
 		  //SimpleGenTrees.splitToPieces(exp)
 		}
+		//pprn("exp:",exp)
+		//pprn("result:",QueryExpTools.getCols(exp))
+		pprn()
+		val dict = RowsGetter.getDict(exp,trees)
+		pprn(dict)
 		// pprn("tableNodeList",exp.tableNodeList)
-		pprn("exp",exp)
+		
 		// pprn("exp.tableNodeList",exp.tableNodeList)
 
 //		 pprn("eval:",exp.eval())
@@ -166,61 +183,25 @@ complex1
 		val colInfo = TreeColInfo(
 		  exp.col2table, //OM
 		  trees)
-		// val tree = trees(1)
-		val ts = QueryExpTools.getContainTables(Right(trees.head.getAllTableExps.toSeq))
-		// val ts1 = QueryExpTools.getContainTables(Right(tree.getAllTableExps.toSeq))
-		// pprn("ts",ts1)
-		
 		 pprn("trees:",trees)
 		//pprn("colInfo.table2col",colInfo.table2col.pairs)
-		val getter = RowsGetter(colInfo)
-		val tableExps = trees.head.getAllTableExps.toSeq
-		val tree = trees(0)
-		val cols = tree.getColExps(colInfo)
-		val select = SelectGen.gen2(tree.depTables,cols,Nil)
-		//pprn("tree.depTables",tree.depTables)
-		//pprn("cols;",cols)
-		//pprn(select.getSQL(None))
-		pprn()
-		//pprn(colInfo.table2col.pairs)
-		// pprn(exp.col2table.pairs)
-		// pprn(exp.colList)
-		pprn(QueryExpTools.colNodeList(exp))
-		//trees(1).getColExps(colInfo)
+		// val getter = RowsGetter(colInfo)
+		// val tableExps = trees.head.getAllTableExps.toSeq
+		// val tree = trees(0)
+		// val cols = tree.getColExps(colInfo)
+		// val select = SelectGen.gen2(tree.depTables,cols,Nil)
+		// pprn()
+		// pprn(QueryExpTools.colNodeList(exp))
 		pprn(exp.eval())
-
 
 	//val ts = QueryExpTools.getContainTables(Right(tableExps))
 
 			//getter.t2c2v2r
-		//pprn("colNodeList(exp)",QueryExpTools.colNodeList(exp))
-		// pprn("tree.getAllTableExps",tree.getAllTableExps)
-
-
-		  // val vs = exp.eval(
-		  //   UnitTable.pk,
-		  //   List(UnitValue),
-		  //   getter)
-
-		  // pprn(vs)
-
-		// pprn("exp:",exp)
-		// pprn(exp.col2table.pairs)
-		// pprn("colnodelis:",QueryExpTools.colNodeList(exp))
-		// for (qt <-  QueryExpTools.getQueryExps(Left(exp))){
-		//   pprn()
-		//   pprn("qt:",qt)
-		//   pprn(QueryExpTools.directColNodes(qt))
-		// }
-		//pprn(getter.t2c2v2r)
-
-
-		// pprn(colInfo.table2col.pairs)
 		if (true)
 {
 	// import anorm.SQL
 
-	//  val r = SQL("select first(id) from staff ")()
+	//  val r = SQL("select sum(sum(id)) from staff; ")()
 	//  pprn(r)
 1
 }

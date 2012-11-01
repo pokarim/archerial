@@ -21,6 +21,7 @@ object Tables extends Metadata{
   val staff = Table("staff", List(
     Column("id", ColType.int.primaryKey.autoIncrement),
     Column("name", ColType.varchar(200)),
+    Column("sex", ColType.varchar(8)),
     Column("age", ColType.int),
     Column("dept_id", ColType.int),
     Column("boss_id", ColType.int),
