@@ -171,7 +171,7 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
   def valExps = exps.map(_._2)
 
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val ks = keyExp.eval(colExp,values,getter)
+	val ks = keyExp.eval(colExp,values,getter).distinct
 	val kcol = keyExp.evalCol(colExp)
 	for {k <- ks}
 	yield {
@@ -188,7 +188,7 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
 case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
   assert(!exps.isEmpty,"!exps.isEmpty")
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val ks = keyExp.eval(colExp,values,getter)
+	val ks = keyExp.eval(colExp,values,getter).distinct
 	val kcol = keyExp.evalCol(colExp)
 	for {k <- ks}
 	yield {
@@ -203,15 +203,14 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
 
 }
 trait Columnable extends QueryExp{
-  def root:TableExp
-  def qexpCol = QExpCol(root,this)
+  def qexpCol = QExpCol(this)
   def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
   ColEvalTool.eval(qexpCol, vcol, values, getter)
   def row2value(row:Row ): Value = row.d(qexpCol)
 
 }
 
-case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
+case class NonNullQExp(col:QueryExp) extends Columnable{
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
   def getSQL(map: TableIdMap):String =	{
 	"(%s is not null)" format col.getSQL(map)
@@ -219,10 +218,8 @@ case class NonNullQExp(root:TableExp,col:QueryExp) extends Columnable{
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
 
-case class SumQExp(table:GroupByNode,valcol:Col) extends Columnable{
-  val root:TableExp = valcol.table
+case class SumQExp(source:GroupByNode,valcol:Col) extends Columnable{
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
-	val t = table//root
 	val vs = ColEvalTool.eval(
 	  qexpCol, vcol, values, getter,false)
 	if (vs.isEmpty) 
@@ -234,8 +231,9 @@ case class SumQExp(table:GroupByNode,valcol:Col) extends Columnable{
 		else Val(RawVal.Int(0))
 	  }
   }
-  def getDependentCol():Stream[ColExp] = Stream(qexpCol,
-											  table.key.colNode)
+  def getDependentCol():Stream[ColExp] = 
+	Stream(qexpCol,
+		   source.key.colNode)
   def getSQL(map: TableIdMap):String =	{
 	"sum(%s)" format valcol.getSQL(map)
   }
@@ -244,10 +242,10 @@ case class SumQExp(table:GroupByNode,valcol:Col) extends Columnable{
 }
 
 
-case class Exists(root:TableExp,cond:QueryExp) extends Columnable{
+case class Exists(source:TableExp,cond:QueryExp) extends Columnable{
   val col :QueryExp = 
 		 ConstCol(ConstantColExp(
-		   WhereNode(root, cond),
+		   WhereNode(source, cond),
 		   RawVal.Int(1)))
 
   override def constants:Seq[ConstantQueryExp] = cond.constants
@@ -258,7 +256,7 @@ case class Exists(root:TableExp,cond:QueryExp) extends Columnable{
   def getSQL(map: TableIdMap):String =	{
 	val any = this
 	val exp = col
-	val trees = SimpleGenTrees.oneTree(exp, root).children
+	val trees = SimpleGenTrees.oneTree(exp, source).children
 	require(trees.length==1,trees.length) // TODO cross join
 	val tree = trees.head
 	val colList = List(col.colList.head)

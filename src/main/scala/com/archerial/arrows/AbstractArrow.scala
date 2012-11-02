@@ -132,7 +132,7 @@ trait AbstractArrow {
 	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {
 	  val (_, pcol@Col(ColNode(cTable, cCol))) = pred
 	  val (obj,condExp@Col(ColNode(c2,_)) ) = cond(pred)
-	  BoolObject -> queryexp.NonNullQExp(c2,condExp)
+	  BoolObject -> queryexp.NonNullQExp(condExp)
 	}
 
 

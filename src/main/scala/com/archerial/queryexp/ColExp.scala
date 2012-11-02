@@ -64,10 +64,13 @@ case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
 	value.toSQLString
 }
 
-case class QExpCol(table:TableExp,exp:QueryExp) extends ColExp{
-  override def isAggregateFun:Boolean = exp.isInstanceOf[SumQExp]
+case class QExpCol(exp:QueryExp) extends ColExp{
+  override def isAggregateFun:Boolean = 
+	exp.isInstanceOf[SumQExp]
+  override def tables:List[TableExp] = 
+	QueryExpTools.directParentTableExps(exp)
   override def constants:Seq[ConstantQueryExp] = exp.constants
-  def getTables:List[TableExp] = List(table) 
+  def getTables:List[TableExp] = tables.toList//List(table_) 
   def getColNodes:List[ColNode] = Nil
   def getSQL(map: TableIdMap):String = exp.getSQL(map)
 }

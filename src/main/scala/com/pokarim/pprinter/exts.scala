@@ -44,8 +44,8 @@ object ToDocImplicits{
 
 	case Exists(ctable,cond) =>
 	  	  labeledRBracketWC("Exists", List[DOC](ctable,cond))
-	case NonNullQExp(ctable,cond) =>
-	  	  labeledRBracketWC("NonNullQExp", List[DOC](ctable,cond))
+	case NonNullQExp(cond) =>
+	  	  labeledRBracketWC("NonNullQExp", List[DOC](cond))
 	case ConstantExp(rawVal) => 
 	  	  labeledRBracketWC("NamedTupleQExp", List[DOC](rawVal))
 	case c: ConstCol => 
@@ -140,10 +140,10 @@ object FromColExp{
 	  
 	case x@ColNode(table,column) =>
 	  labeledRBracketWC("ColNode", List[DOC](hashCodeStr(table),column.name))
-	case x@QExpCol(table,exp) =>
+	case x@QExpCol(exp) =>
 	  labeledRBracketWC(
 		"QExpCol", 
-		List[DOC](hashCodeStr(table),exp))
+		List[DOC](exp))
 
   }}
 

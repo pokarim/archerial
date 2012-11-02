@@ -63,7 +63,9 @@ object QueryExpTools{
 	  directParents(self).flatMap{
 		case r if r == self=> Nil
 		case Left(x:Columnable) =>
-		  getTableExps(Right(x.root),pot2)
+		  directParentTableExps(x).flatMap((t:TableExp)=>
+		  getTableExps(Right(t),pot2))
+		  //getTableExps(Right(x.root),pot2)
 		case x => 
 		  getTableExps(x,pot2).distinct}
 	}
@@ -92,7 +94,9 @@ object QueryExpTools{
 	=> List(colNode)
 	case _ => Nil
   }
-
+  def directParentTableExps(self:QueryExp) = 
+	directParents(Left(self)).map{
+	  case Right(table) => table}
   def directParents(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
@@ -118,7 +122,7 @@ object QueryExpTools{
 
 	case Left(Col(colNode)) => 
 	  List(Right(colNode.table))
-	case Left(NonNullQExp(_,Col(colNode))) => 
+	case Left(NonNullQExp(Col(colNode))) => 
 	  List(Right(colNode.table))
 	case _ => Nil
   }	
@@ -141,7 +145,7 @@ object QueryExpTools{
 	  List(Right(t))
 	case Right(JoinNode(_,leftcol,_,_)) => List(Right(leftcol.table))
 	case Left(Col(colNode)) => List(Right(colNode.table))
-	case Left(NonNullQExp(_,Col(colNode))) => 
+	case Left(NonNullQExp(Col(colNode))) => 
 	  List(Right(colNode.table))
 	case _ => Nil
   }	
