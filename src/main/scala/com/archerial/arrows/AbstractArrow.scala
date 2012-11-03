@@ -125,7 +125,7 @@ trait AbstractArrow {
 		   keycol@Col(ColNode(cTable, cCol))) = pred
 	  val g = GroupByNode(cTable,keycol)
 	  val inner = Col(ColNode(g,cCol))
-	  val r@(_, valcol@Col(_) ) = col(obj -> inner)
+	  val r@(_, valcol) = col(obj -> inner)
 	  IntObject -> queryexp.SumQExp(g,valcol)
 	}
 

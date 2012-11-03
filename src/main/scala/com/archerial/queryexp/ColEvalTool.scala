@@ -25,6 +25,9 @@ import scala.collection.immutable
 object ColEvalTool{
 
   def eval(colExp:ColExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): Seq[Value] = {
+	if(!getter.dict.contains((vcol,colExp))){
+	  pprn("vcol -> colExp",(vcol,colExp))
+	}
 	assert(getter.dict.contains((vcol,colExp)))
 	val vs = for {x <- values
 				  v <- getter.dict((vcol,colExp))(x)
