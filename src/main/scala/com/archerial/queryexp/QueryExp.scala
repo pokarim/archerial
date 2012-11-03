@@ -104,8 +104,6 @@ object OpExps {
 trait ConstantQueryExp extends QueryExp {
   def rawVal:RawVal
   override def constants:Seq[ConstantQueryExp] = List(this)
-  // def getSQLandParmas(map: TableIdMap):(String,Seq[(String,RawVal)]) =
-  // 	(getSQL(map),List( -> rawVal))
 
   def getSQL(map:TableIdMap):String = {
 	if (map.constMap.contains(this))
@@ -179,7 +177,7 @@ case class Col(colNode: ColNode) extends QueryExp{
 }
 
 case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends QueryExp with TupleExpBase {
-  def keyExp = keycol//dom.id
+  def keyExp = keycol
   def valExps = exps.map(_._2)
 
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
@@ -221,7 +219,7 @@ case class NonNullQExp(col:QueryExp) extends Columnable{
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
 
-case class SumQExp(source:GroupByNode,valcol:QueryExp) extends Columnable{
+trait AggregateFuncQExp extends Columnable{
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
 	val vs = ColEvalTool.eval(
 	  qexpCol, vcol, values, getter,false)
@@ -234,11 +232,24 @@ case class SumQExp(source:GroupByNode,valcol:QueryExp) extends Columnable{
 		else Val(RawVal.Int(0))
 	  }
   }
+  override def constants:Seq[ConstantQueryExp] = 
+	valcol.constants
+  val valcol:QueryExp
+  val source:GroupByNode
+}
+object AggregateFuncQExp{
+  def unapply(x:AggregateFuncQExp):Option[(GroupByNode,QueryExp)] = Some((x.source,x.valcol))
+}
+case class SumQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
   def getSQL(map: TableIdMap):String =	{
 	"sum(%s)" format valcol.getSQL(map)
   }
-  override def constants:Seq[ConstantQueryExp] = 
-	valcol.constants
+}
+
+case class AvgQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
+  def getSQL(map: TableIdMap):String =	{
+	"avg(%s)" format valcol.getSQL(map)
+  }
 }
 
 

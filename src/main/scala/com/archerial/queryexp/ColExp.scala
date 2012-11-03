@@ -66,7 +66,7 @@ case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
 
 case class QExpCol(exp:QueryExp) extends ColExp{
   override def isAggregateFun:Boolean = 
-	exp.isInstanceOf[SumQExp]
+	exp.isInstanceOf[AggregateFuncQExp]
   override def tables:List[TableExp] = 
 	QueryExpTools.directParentTableExps(exp)
   override def constants:Seq[ConstantQueryExp] = exp.constants

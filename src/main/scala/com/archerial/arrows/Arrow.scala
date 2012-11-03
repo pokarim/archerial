@@ -59,9 +59,21 @@ case class NonNull(col:Arrow) extends UnaryColOp{
 case class IsNull(col:Arrow) extends UnaryColOp{
   def cod = BoolObject
 }
-
-case class Sum(col:Arrow) extends UnaryColOp{
+trait AggregateFunc extends UnaryColOp{
+  def qexp:(GroupByNode,QueryExp) => Columnable
+  val col:Arrow
+}
+object AggregateFunc{
+  def unapply(x:AggregateFunc):Option[Arrow] = Some(x.col)
+}
+case class Sum(col:Arrow) extends AggregateFunc{
   def cod = IntObject
+  def qexp = SumQExp
+}
+
+case class Avg(col:Arrow) extends AggregateFunc{
+  def cod = IntObject
+  def qexp = AvgQExp
 }
   
 

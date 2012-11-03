@@ -114,19 +114,13 @@ trait AbstractArrow {
 	  (BoolObject,Exists(cTable, condExp))
 	}
 
-	// case (pred@(UnitObject,_)  , Sum(col)) => {
-	//   val g = GroupByNode(UnitTable,Col(UnitTable.pk))
-	//   val inner = Col(ColNode(g,UnitTable.pk.column))
-	//   val (ro, rc:Col) = col(UnitObject -> inner)
-	//   ro -> queryexp.SumQExp(UnitTable, rc)
-	// }
-	case (pred  , Sum(col)) => {
-	  val (obj,//:ColObject, 
-		   keycol@Col(ColNode(cTable, cCol))) = pred
+	case (pred  , func@AggregateFunc(col)) => {
+	  val (obj, keycol@Col(ColNode(cTable, cCol))) = pred
 	  val g = GroupByNode(cTable,keycol)
 	  val inner = Col(ColNode(g,cCol))
 	  val r@(_, valcol) = col(obj -> inner)
-	  IntObject -> queryexp.SumQExp(g,valcol)
+	  IntObject -> func.qexp(g,valcol)
+	  //IntObject -> queryexp.SumQExp(g,valcol)
 	}
 
 	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {

@@ -62,10 +62,6 @@ object QueryExpTools{
 	  self.fold((_)=>Nil,List(_)) ++
 	  directParents(self).flatMap{
 		case r if r == self=> Nil
-		// case Left(x:Columnable) =>
-		//   directParentTableExps(x).flatMap((t:TableExp)=>
-		//   getTableExps(Right(t),pot2))
-
 		case x => 
 		  getTableExps(x,pot2).distinct}
 	}
@@ -97,7 +93,7 @@ object QueryExpTools{
   def directParents(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
-	case Left(SumQExp(group,value)) => 
+	case Left(AggregateFuncQExp(group,value)) => 
 	  directParents(Left(value)) ++ List(Right(group))
 	  //Right(group) :: directParents(Left(value))
 	
@@ -127,7 +123,7 @@ object QueryExpTools{
   def directParentsOM(self:Either[QueryExp,TableExp]):List[Either[QueryExp,TableExp]] = self match{
 	case Left(BinOp(left,right)) => List(Left(left),Left(right))
 	case Left(NTuple(exps)) => exps.map(Left(_))
-	case Left(SumQExp(group,value)) => 
+	case Left(AggregateFuncQExp(group,value)) => 
 	  Right(group) :: directParents(Left(value))
 //	  directParents(Left(value)) ++ List(Right(group))
 	case Left(n@NamedTupleQExp(key,exps)) => 
