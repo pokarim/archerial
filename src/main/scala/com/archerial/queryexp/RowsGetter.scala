@@ -68,13 +68,18 @@ object RowsGetter{
 	  case ((ps,map),t:TableTree)=> {
 		val pss = groupTuples(
 		  for {p@(x,y) <- ps.toSeq}
-		  yield (
-			{x.tables ++ y.tables}.toSet.subsetOf(
-			  t.allTableExpsWithUnit), p))
+		  yield {
+			pprn("x.tables:",x.tables)
+			pprn("y.tables:",y.tables)
+			pprn("all:",t.allTableExpsWithUnit)
+
+			({x.tables ++ y.tables}.toSet.subsetOf(
+			  t.allTableExpsWithUnit), p)})
 		(pss.getOrElse(false,Nil).toSet, 
 		 map ++ Map(t->pss.getOrElse(true,Nil)))
 	  }}
-	assert(ptail.isEmpty)
+	//assert(ptail.isEmpty)
+	pprn("ptail",ptail)
 	map
   }
 }

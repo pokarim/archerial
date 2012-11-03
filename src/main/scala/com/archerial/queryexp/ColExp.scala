@@ -59,7 +59,7 @@ case class ColNode(table: TableExp, column: Column) extends ColExp{
 
 case class ConstantColExp(table: TableExp, value: RawVal) extends ColExp {
   def getTables:List[TableExp] = List(table)
-  def getColNodes:List[ColNode] = Nil
+  def getColNodes:List[ColNode] = List(table.pk)
   def getSQL(map: TableIdMap):String = 
 	value.toSQLString
 }

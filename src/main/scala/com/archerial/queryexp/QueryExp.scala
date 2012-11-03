@@ -26,29 +26,43 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 
 sealed trait QueryExp extends AbstractQueryExp
 
+
+
+trait Columnable extends QueryExp{
+  def qexpCol = QExpCol(this)
+  def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
+  ColEvalTool.eval(qexpCol, vcol, values, getter)
+  def row2value(row:Row ): Value = row.d(qexpCol)
+  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
+}
+
 object BinOp {
   def unapply(b:BinOp):Option[(QueryExp,QueryExp)] = Some(b.left -> b.right)
 }
-trait BinOp extends QueryExp{
+trait BinOp extends 
+//QueryExp{
+  Columnable{
   val left:QueryExp
   val right:QueryExp
   override def constants:Seq[ConstantQueryExp] = 
 	left.constants ++ right.constants
 
-  def getDependentCol():Stream[ColExp] = left.getDependentCol() ++ right.getDependentCol()
+  override def getDependentCol():Stream[ColExp] = 
+	qexpCol #:: // TODO
+	left.getDependentCol() ++ right.getDependentCol()
   
   def SQLOpString:String
   
   def getRawValue(left:RawVal,right:RawVal):RawVal
 
-  def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
+  override def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
 	  for {Val(l,ln) <- left.eval(col,values,getter)
 		   Val(r,rn) <- right.eval(col,values,getter)
 		   val v = getRawValue(l,r)}
 	  yield Val(v, ln * rn)
 	}
 
-  def row2value(row:Row ): Value =
+  override def row2value(row:Row ): Value =
 	(left.row2value(row),right.row2value(row)) match {
 	  case (Val(l,ln),Val(r,rn)) =>
 		Val(getRawValue(l,r), ln * rn)} 
@@ -202,16 +216,7 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
   def valExps = exps.tail
 
 }
-trait Columnable extends QueryExp{
-  def qexpCol = QExpCol(this)
-  def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
-  ColEvalTool.eval(qexpCol, vcol, values, getter)
-  def row2value(row:Row ): Value = row.d(qexpCol)
-
-}
-
 case class NonNullQExp(col:QueryExp) extends Columnable{
-  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
   def getSQL(map: TableIdMap):String =	{
 	"(%s is not null)" format col.getSQL(map)
   }
@@ -231,9 +236,9 @@ case class SumQExp(source:GroupByNode,valcol:Col) extends Columnable{
 		else Val(RawVal.Int(0))
 	  }
   }
-  def getDependentCol():Stream[ColExp] = 
-	Stream(qexpCol,
-		   source.key.colNode)
+  // def getDependentCol():Stream[ColExp] = 
+  // 	Stream(qexpCol)
+		   //,source.key.colNode)
   def getSQL(map: TableIdMap):String =	{
 	"sum(%s)" format valcol.getSQL(map)
   }
@@ -250,7 +255,7 @@ case class Exists(source:TableExp,cond:QueryExp) extends Columnable{
 
   override def constants:Seq[ConstantQueryExp] = cond.constants
 
-  def getDependentCol():Stream[ColExp] = Stream(qexpCol)
+  // def getDependentCol():Stream[ColExp] = Stream(qexpCol)
 
   override lazy val colList = List(col.colList.head)
   def getSQL(map: TableIdMap):String =	{
