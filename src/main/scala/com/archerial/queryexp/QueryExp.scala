@@ -39,31 +39,17 @@ trait Columnable extends QueryExp{
 object BinOp {
   def unapply(b:BinOp):Option[(QueryExp,QueryExp)] = Some(b.left -> b.right)
 }
-trait BinOp extends Columnable{
+trait BinOp extends QueryExp{
   val left:QueryExp
   val right:QueryExp
   override def constants:Seq[ConstantQueryExp] = 
 	left.constants ++ right.constants
 
-  override def getDependentCol():Stream[ColExp] = 
-	qexpCol #:: // TODO
-	left.getDependentCol() ++ right.getDependentCol()
   
   def SQLOpString:String
   
   def getRawValue(left:RawVal,right:RawVal):RawVal
 
-  // override def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
-  // 	  for {Val(l,ln) <- left.eval(col,values,getter)
-  // 		   Val(r,rn) <- right.eval(col,values,getter)
-  // 		   val v = getRawValue(l,r)}
-  // 	  yield Val(v, ln * rn)
-  // 	}
-
-  // override def row2value(row:Row ): Value =
-  // 	(left.row2value(row),right.row2value(row)) match {
-  // 	  case (Val(l,ln),Val(r,rn)) =>
-  // 		Val(getRawValue(l,r), ln * rn)} 
   
   def getSQL(map: TableIdMap):String = {
 	val l = left.getSQL(map)
@@ -72,18 +58,39 @@ trait BinOp extends Columnable{
   }
 }
 
-object OpExps {
-  case class *(left:QueryExp, right:QueryExp) extends BinOp{
+trait ColumnableBinOp extends Columnable with BinOp {
+  override def getDependentCol():Stream[ColExp] = 
+	qexpCol #:: // TODO
+	left.getDependentCol() ++ right.getDependentCol()
+}
 
-	def getRawValue(left:RawVal,right:RawVal):RawVal = (left,right)
-	  match{
-		case (RawVal.Int(x),RawVal.Int(y))
-		=> RawVal.Int(x * y)
+trait NonColumnableBinOp extends BinOp {
+  override def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
+  	  for {Val(l,ln) <- left.eval(col,values,getter)
+  		   Val(r,rn) <- right.eval(col,values,getter)
+  		   val v = getRawValue(l,r)}
+  	  yield Val(v, ln * rn)
+  	}
+
+  override def row2value(row:Row ): Value =
+  	(left.row2value(row),right.row2value(row)) match {
+  	  case (Val(l,ln),Val(r,rn)) =>
+  		Val(getRawValue(l,r), ln * rn)} 
+}
+
+object OpExps {
+  case class *(left:QueryExp, right:QueryExp) extends ColumnableBinOp{
+	def getRawValue(left:RawVal,right:RawVal):RawVal =
+	  (left,right) match{
+		case (RawVal.Int(x),RawVal.Int(y)) =>
+		  RawVal.Int(x * y)
+		case (RawVal.Long(x),RawVal.Long(y)) =>
+		  RawVal.Long(x * y)
 	  }
 	def SQLOpString:String = "*"
   }
 
-  case class =:=(left:QueryExp, right:QueryExp) extends BinOp{
+  case class =:=(left:QueryExp, right:QueryExp) extends ColumnableBinOp{
 
 	def getRawValue(left:RawVal,right:RawVal):RawVal =
 	  RawVal.Bool(left == right)
@@ -91,7 +98,7 @@ object OpExps {
 	def SQLOpString:String = "="
   }
 
-  case class And(left:QueryExp, right:QueryExp) extends BinOp{
+  case class And(left:QueryExp, right:QueryExp) extends ColumnableBinOp{
 
 	def getRawValue(left:RawVal,right:RawVal):RawVal =
 	  (left,right) match {
@@ -101,6 +108,7 @@ object OpExps {
 	def SQLOpString:String = "AND"
   }
 }
+
 trait ConstantQueryExp extends QueryExp {
   def rawVal:RawVal
   override def constants:Seq[ConstantQueryExp] = List(this)
@@ -237,9 +245,12 @@ trait AggregateFuncQExp extends Columnable{
   val valcol:QueryExp
   val source:GroupByNode
 }
+
 object AggregateFuncQExp{
-  def unapply(x:AggregateFuncQExp):Option[(GroupByNode,QueryExp)] = Some((x.source,x.valcol))
+  def unapply(x:AggregateFuncQExp):Option[(GroupByNode,QueryExp)] =
+	Some((x.source,x.valcol))
 }
+
 case class SumQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
   def getSQL(map: TableIdMap):String =	{
 	"sum(%s)" format valcol.getSQL(map)
@@ -276,6 +287,4 @@ case class Exists(source:TableExp,cond:QueryExp) extends Columnable{
 	val sql = select.getSQL(None)
 	"exists (%s)" format sql._1
   }
-
-
 }
