@@ -26,8 +26,16 @@ import java.sql.Connection
 import QueryExpTools.getTableExps
 import scalaz.{Value => _, _}, Scalaz._
 
-import com.archerial.utils.StateUtil.forS
+import com.archerial.utils.StateUtil.{forS,return_}
 
+case class UpdateInfo(s:Stream[(ColArrow,Value,Value)]){
+}
+object UpdateInfo{
+  val empty = UpdateInfo(Stream.empty)
+  def update(arrow:ColArrow,id:Value,v:Value)= 
+	modify[UpdateInfo]((u) =>
+	  u.copy(s=(arrow, id, v) #:: u.s))
+}
 trait AbstractArrow {
   this:Arrow => ;
   type Conn = Connection
@@ -47,39 +55,28 @@ trait AbstractArrow {
 	  format(this,this.dom))
 	apply(UnitCol)
   }
-  type Updates = Set[(ColArrow,Value,Value)]
+  type Updates = UpdateInfo//Stream[(ColArrow,Value,Value)]
   def update(values:Seq[Value]):State[Updates, Seq[Value]] = {
-
 	  this match {
 		case Composition(left,right) =>
 		  right.update(values)
 		case NamedTuple(arrows) => {
 		  forS(values){
-			case v:NamedVTuple =>{
+			case v:NamedVTuple if v.contains("__id__") =>{
 			  val VList(id) = v("__id__")
 			  val arrs = forS(arrows.filter{
 				case (n,_)=> v.contains(n)}){
-				case (name,arrow@ColArrow(t,d,c,dc,cc)) =>
-				  {
-					val value = v(name)
-					for {values <- arrow.update(Seq(value))
-						 _ <- modify[Updates](
-						   (s)=> s + ((arrow, id, values.head))
-						 )
-						 val _ = pprn("hoge")
-					   } yield ()
-				  }
+				  case (name,arrow@ColArrow(t,d,c,dc,cc)) =>
+					for {vs <- arrow.update(Seq(v(name)))
+						 _ <- UpdateInfo.update(arrow,id,vs.head)}
+					yield ()
 				  case _ => init[Updates]
-			  }
+				}
 			  for {_ <- arrs} yield id
 			}
-			
-			//		  pprn(amap.toMap)
 		  }
 		}
-		case _ => {
-		  for (_ <- init) yield values
-		}
+		case _ => return_(values)
 	  }
   }
   

@@ -40,8 +40,8 @@ import com.codahale.jerkson.AST._//JValue
 import com.codahale.jerkson.Json.{generate,parse}
 import com.codahale.jerkson.Json
 
-import com.fasterxml.jackson.databind.{MappingJsonFactory, ObjectMapper}
-import com.fasterxml.jackson.core.{JsonGenerator, JsonParser => JacksonParser}
+// import com.fasterxml.jackson.databind.{MappingJsonFactory, ObjectMapper}
+// import com.fasterxml.jackson.core.{JsonGenerator, JsonParser => JacksonParser}
 
 
 
@@ -114,6 +114,40 @@ class SampleSpec extends Specification {
   "__id__" : [ 4 ],
   "Name" : [ "Rich" ]
 } ]"""
+
+	{staffs >>> NamedTuple(
+	  "Name" ->name,
+	  "Boss" -> (boss >>> NamedTuple("Name" -> name))
+	)}.eval().prettyJsonString === 
+	  """[ {
+  "__id__" : [ 1 ],
+  "Name" : [ "Guido" ],
+  "Boss" : [ ]
+}, {
+  "__id__" : [ 2 ],
+  "Name" : [ "Martin" ],
+  "Boss" : [ {
+    "__id__" : [ 1 ],
+    "Name" : [ "Guido" ]
+  } ]
+}, {
+  "__id__" : [ 3 ],
+  "Name" : [ "Larry" ],
+  "Boss" : [ {
+    "__id__" : [ 2 ],
+    "Name" : [ "Martin" ]
+  } ]
+}, {
+  "__id__" : [ 4 ],
+  "Name" : [ "Rich" ],
+  "Boss" : [ {
+    "__id__" : [ 1 ],
+    "Name" : [ "Guido" ]
+  } ]
+} ]"""
+
+
+
 
     (staffs >>> Filter(name =:= "Guido") >>>
      NamedTuple("Name" -> name,

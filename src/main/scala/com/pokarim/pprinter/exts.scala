@@ -86,10 +86,10 @@ object ToDocImplicits{
   implicit def fromTree[A <% DOC]:Tree[A] => DOC = FromTree.toDOC _
 }
 object FromArrow{
-  import ToDocImplicits._
+  import ToDocImplicits.{fromArrow=>_,_}
   import com.archerial.arrows._
 
-  implicit def toDOC(x:Arrow):DOC = {
+  def toDOC(x:Arrow):DOC = {
 	x match {
 	  case ColArrow(table,_,_,dcol,ccol) =>
 		labeledRBracketWC(

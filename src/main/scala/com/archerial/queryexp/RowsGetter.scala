@@ -32,7 +32,7 @@ object RowsGetter{
   def getPKs(x:ColExp,y:ColExp):Set[ColExp] = {
 	val xt = x.tables.flatMap(getTableExps).toSet
 	val yt = y.tables.flatMap(getTableExps).toSet
-	val ts = (yt -- xt) ++ x.tables ++ y.tables
+	val ts = (yt -- xt) ++ y.tables //++ x.tables
 	ts.map(_.pk) ++ List(x,y)
   }
   def getPair2Col(tree:TableTree,t2p:Map[TableTree,CPairs]):Seq[(CPair,Seq[ColExp])] = {
@@ -68,18 +68,12 @@ object RowsGetter{
 	  case ((ps,map),t:TableTree)=> {
 		val pss = groupTuples(
 		  for {p@(x,y) <- ps.toSeq}
-		  yield {
-			pprn("x.tables:",x.tables)
-			pprn("y.tables:",y.tables)
-			pprn("all:",t.allTableExpsWithUnit)
-
-			({x.tables ++ y.tables}.toSet.subsetOf(
-			  t.allTableExpsWithUnit), p)})
+		  yield {x.tables ++ y.tables}.toSet.subsetOf(
+			t.allTableExpsWithUnit) -> p)
 		(pss.getOrElse(false,Nil).toSet, 
 		 map ++ Map(t->pss.getOrElse(true,Nil)))
 	  }}
-	//assert(ptail.isEmpty)
-	pprn("ptail",ptail)
+	assert(ptail.isEmpty)
 	map
   }
 }
