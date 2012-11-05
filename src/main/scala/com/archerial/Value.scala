@@ -91,7 +91,8 @@ case class VTuple(xs: Value*) extends Value
 
 case class NamedVTuple(namedValues: (String,Value)*) extends Value{
   val map = namedValues.toMap
-  def apply(name:String)=map(name)
+  def apply(name:String) = map(name)
+  def contains(name:String) = map.contains(name)
 }
 
 case class VStream(xs: Seq[Value]) extends Value{

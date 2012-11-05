@@ -24,6 +24,9 @@ import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
 import java.sql.Connection
 import QueryExpTools.getTableExps
+import scalaz.{Value => _, _}, Scalaz._
+
+import com.archerial.utils.StateUtil.forS
 
 trait AbstractArrow {
   this:Arrow => ;
@@ -44,26 +47,42 @@ trait AbstractArrow {
 	  format(this,this.dom))
 	apply(UnitCol)
   }
-  def update(values:Seq[Value])(implicit con:Conn):Unit = {
-	this match {
-	  case Composition(left,right) =>
-		right.update(values)
-	  case NamedTuple(arrows) => {
-		pprn(values) 
-		for (v@NamedVTuple(_*) <- values) 
-		yield {
-		  val VList(id) = v("__id__")
-		  pprn("id:",(id,v))
-		  val amap = 
-			for ((name,arrow@ColArrow(t,d,c,dc,cc)) <- arrows)
-			yield arrow -> v(name)
-		  pprn(amap.toMap)
+  type Updates = Set[(ColArrow,Value,Value)]
+  def update(values:Seq[Value]):State[Updates, Seq[Value]] = {
+
+	  this match {
+		case Composition(left,right) =>
+		  right.update(values)
+		case NamedTuple(arrows) => {
+		  forS(values){
+			case v:NamedVTuple =>{
+			  val VList(id) = v("__id__")
+			  val arrs = forS(arrows.filter{
+				case (n,_)=> v.contains(n)}){
+				case (name,arrow@ColArrow(t,d,c,dc,cc)) =>
+				  {
+					val value = v(name)
+					for {values <- arrow.update(Seq(value))
+						 _ <- modify[Updates](
+						   (s)=> s + ((arrow, id, values.head))
+						 )
+						 val _ = pprn("hoge")
+					   } yield ()
+				  }
+				  case _ => init[Updates]
+			  }
+			  for {_ <- arrs} yield id
+			}
+			
+			//		  pprn(amap.toMap)
+		  }
+		}
+		case _ => {
+		  for (_ <- init) yield values
 		}
 	  }
-	  case _ => {}
-	}
   }
-
+  
   def apply(pred: QueryExp):QueryExp = 
 	((pred, this) : @unchecked) match {
 	case (UnitCol, AllOf(obj)) => Col(obj.getColNode())

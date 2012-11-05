@@ -82,9 +82,23 @@ object ToDocImplicits{
   implicit val fromTableIdMap = FromTableIdMap.toDOC _
   implicit val fromRow = FromRow.toDOC _
   implicit val fromValue = FromValue.toDOC _
+  implicit val fromArrow = FromArrow.toDOC _
   implicit def fromTree[A <% DOC]:Tree[A] => DOC = FromTree.toDOC _
 }
+object FromArrow{
+  import ToDocImplicits._
+  import com.archerial.arrows._
 
+  implicit def toDOC(x:Arrow):DOC = {
+	x match {
+	  case ColArrow(table,_,_,dcol,ccol) =>
+		labeledRBracketWC(
+		  "ColArrow", 
+		  List[DOC](table.name,dcol,ccol))
+	  case _ => x:DOC
+	}
+  }
+}
 object FromTableExp{
   import ToDocImplicits._
 
