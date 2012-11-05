@@ -23,16 +23,21 @@ import com.archerial.queryexp._
 
 sealed trait Arrow extends AbstractArrow
 
+trait ArrowGen extends Arrow
+// trait StrictArrow extends ArrowGen {
+// }
+
 object Arrow{
   implicit def toConst(x:String):Arrow = Const(RawVal.Str(x))
 }
+
 case class AllOf(cod:ColObject) extends Arrow{
   def dom = UnitObject
   def unary_~ : Arrow = 
 	throw new java.lang.UnsupportedOperationException(
 	  "AllOf().inverse")
 }
-trait BoolUnaryOp extends Arrow{
+trait BoolUnaryOp extends ArrowGen{
   require(cond.cod == BoolObject)
   val cond:Arrow
   def dom = cond.dom
@@ -42,7 +47,7 @@ trait BoolUnaryOp extends Arrow{
 	  "BoolUnaryOp().inverse")
 }
 
-trait UnaryColOp extends Arrow{
+trait UnaryColOp extends ArrowGen{
   val col:Arrow
   def dom = col.dom
   def unary_~ : Arrow = 
@@ -75,30 +80,37 @@ case class Avg(col:Arrow) extends AggregateFunc{
   def cod = IntObject
   def qexp = AvgQExp
 }
-  
-
-
-
 
 trait EndoMap extends Arrow{
   def cod = dom
   def unary_~ : Arrow = this
 }
 
-
+object OpArrow{
+  def unapply(x:OpArrow):Option[(Arrow,Arrow)] = 
+	Some((x.left,x.right))
+}
+trait OpArrow extends Arrow{
+  val left:Arrow
+  val right :Arrow
+  def qexp:(QueryExp,QueryExp) => QueryExp
+  def unary_~ : Arrow = throw new Exception("OpArrow.unary")
+  def dom = (left.dom,right.dom) match {
+	case (c:ColObject ,_) => c
+	case (_, c) => c
+  }
+}
 object OpArrows{
-  case class =:=(left:Arrow, right:Arrow) extends Arrow
+  case class =:=(left:Arrow, right:Arrow) extends OpArrow
   {
-	def dom = left.dom
 	def cod = BoolObject
-	def unary_~ : Arrow = throw new Exception("=:=.unary") 
+	def qexp = OpExps.=:=
   }
 
-  case class *(left:Arrow, right:Arrow) extends Arrow
+  case class *(left:Arrow, right:Arrow) extends OpArrow
   {
-	def dom = left.dom
 	def cod = left.cod
-	def unary_~ : Arrow = throw new Exception("*.unary") 
+	def qexp = OpExps.*
   }
 
 }
@@ -116,8 +128,11 @@ case class Const(x: RawVal) extends Arrow {
 }
 
 case class Filter(cond:Arrow) extends EndoMap{
-  require(cond.cod == BoolObject)
-  def dom = cond.dom
+  require(cond.cod == BoolObject && cond.dom.isInstanceOf[ColObject])
+  def dom:ColObject = cond.dom match {
+	case c:ColObject => c
+  }
+
 }
 
 case class Identity(dom:Object) extends EndoMap{

@@ -22,13 +22,16 @@ import com.archerial.queryexp._
 import OpArrows._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
+import java.sql.Connection
+import QueryExpTools.getTableExps
 
 trait AbstractArrow {
   this:Arrow => ;
-  
+  type Conn = Connection
   def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
 	queryExp.eval(sp)
   }
+
   def dummy = "abc"
   def dom:Object
   def cod:Object
@@ -39,112 +42,83 @@ trait AbstractArrow {
 	  this.dom == UnitObject,
 	  "queryExp() needs this.dom == UnitObject but %s.dom is %s"
 	  format(this,this.dom))
-	apply((UnitObject,UnitCol))._2
+	apply(UnitCol)
+  }
+  def update(values:Seq[Value])(implicit con:Conn):Unit = {
+	this match {
+	  case Composition(left,right) =>
+		right.update(values)
+	  case NamedTuple(arrows) => {
+		pprn(values) 
+		for (v@NamedVTuple(_*) <- values) 
+		yield {
+		  val VList(id) = v("__id__")
+		  pprn("id:",(id,v))
+		  val amap = 
+			for ((name,arrow@ColArrow(t,d,c,dc,cc)) <- arrows)
+			yield arrow -> v(name)
+		  pprn(amap.toMap)
+		}
+	  }
+	  case _ => {}
+	}
   }
 
-  def apply(pred: (Object,QueryExp)):(Object,QueryExp) = ((pred,this) : @unchecked) match {
-	case ((UnitObject,UnitCol), AllOf(obj)) => {
-	  (obj, Col(obj.getColNode()))
-	}
-	case ((predObj , predCol:Col),AllOf(obj))=>{
+  def apply(pred: QueryExp):QueryExp = 
+	((pred, this) : @unchecked) match {
+	case (UnitCol, AllOf(obj)) => Col(obj.getColNode())
+
+	case (predCol:Col,AllOf(obj))=>{
 	  val ColNode(table:TableNode,column) = obj.getColNode()
-	  obj -> Col(
-		ColNode(CrossJoin(table.table,predCol.table),column))
-	  //obj -> Col(colNode)
+	  Col(ColNode(CrossJoin(table.table, predCol.table), column))
 	}
 
-	case (pred, self: Identity) => {
-	  self match{
-	  case Identity(obj@ColObject(table,column)) =>{
+	case (predcol, Identity(obj@ColObject(table,column))) => 
 		ColArrow(table, ColObject(table, column),
 				 ColObject(table, column),
-				 column,column)(pred)
-	  }
-	}}
-	case ((_, pred:Col), self@ColArrow(table, _, cod, dcol, ccol)) => {
-	  (cod, Col(JoinNode.joinWith(table, pred, dcol), ccol))
-	}
+				 column,column)(predcol)
 
-	case (pred ,self@Composition(left, right)) => 
-	  right(left(pred))
+	case (pred:Col, self@ColArrow(table, _, _, dcol, ccol)) => 
+	  Col(JoinNode.joinWith(table, pred, dcol), ccol)
 
-	case (pred@(obj,_), left =:= right) =>{
-	  val (objL, l) = left(pred)
-	  val (objR, r) = right(pred)
-	  (obj,OpExps.=:= (l,r))
-	}
+	case (pred ,self@Composition(l, r)) => r(l(pred))
 
-	case (pred@(obj,_), left * right) =>{
-	  val (objL, l) = left(pred)
-	  val (objR, r) = right(pred)
-	  (obj,OpExps.* (l,r))
-	}
+	case (pred, self@OpArrow(l,r)) => self.qexp(l(pred),r(pred))
 
-	case ((obj, col:Col), arr@Const(x)) => {
-	  (arr.getObject, ConstCol(ConstantColExp(col.colNode.table, x)))
-	}
+	case (col:Col, arr@Const(x)) =>
+	  ConstCol(ConstantColExp(col.colNode.table, x))
 
-	case (pred@(obj,Col(ColNode(_,_)))  , Filter(cond)) => {
-	  val Col(ColNode(t1,_)) = pred._2
-	  val pred2@(obj:ColObject, Col(ColNode(cTable, cCol))) = pred._1.id(pred)
+	case (pred, self@Filter(cond)) => {
+	  val pred2@Col(ColNode(cTable, cCol)) = dom.id(pred)
 	  cTable match {
 		case x:JoinNode => {
-		  val (_, condExp) = cond(pred2)
-		  val condf = (node:JoinNode) =>
-			cond(obj,Col(ColNode(node,cCol)))._2
+		  val condf = (node:JoinNode) => cond(Col(ColNode(node,cCol)))
 		  val j = x.copy(condf=Some(condf))
-		  import QueryExpTools.getTableExps
 		  val trunk = (j :: getTableExps(cTable)).toSet
 		  val branch = getTableExps(condf(j)).filter(!trunk(_))
-		  if (branch.nonEmpty)
-			Filter(Any(cond)).apply(pred)
-		  else
-			(obj,Col(j, obj.column))
+		  if (branch.nonEmpty) Filter(Any(cond)).apply(pred2)
+		  else Col(j, self.dom.column)
 		}
-		case x =>{
-		  val (_,condExp) = cond(pred2)
-		  (obj,Col(WhereNode(cTable, condExp), obj.column ))
-		}
+		case _ =>
+		  Col(WhereNode(cTable, cond(pred2)), self.dom.column )
 	  }
 	}
 
-	case (pred  , Any(cond)) => {
-	  val (_, pcol@Col(ColNode(cTable, cCol))) = pred
-	  val (_,condExp ) = cond(pred)
-	  (BoolObject,Exists(cTable, condExp))
+	case (keycol@Col(_), func@AggregateFunc(arr)) => {
+	  val g = GroupByNode(keycol.colNode.table, keycol)
+	  val valcol = arr(Col(keycol.colNode.copy(table=g)))
+	  func.qexp(g,valcol)
 	}
 
-	case (pred  , func@AggregateFunc(col)) => {
-	  val (obj, keycol@Col(ColNode(cTable, cCol))) = pred
-	  val g = GroupByNode(cTable,keycol)
-	  val inner = Col(ColNode(g,cCol))
-	  val r@(_, valcol) = col(obj -> inner)
-	  IntObject -> func.qexp(g,valcol)
-	  //IntObject -> queryexp.SumQExp(g,valcol)
-	}
+	case (pred@Col(_), Any(cond)) => 
+	  Exists(pred.colNode.table, cond(pred))
 
-	case (pred@(_,Col(ColNode(_,_)))  , NonNull(cond)) => {
-	  val (_, pcol@Col(ColNode(cTable, cCol))) = pred
-	  val (obj,condExp@Col(ColNode(c2,_)) ) = cond(pred)
-	  BoolObject -> queryexp.NonNullQExp(condExp)
-	}
+	case (pred, NonNull(cond)) => queryexp.NonNullQExp(cond(pred))
 
+ 	case (pred, self@Tuple(arrows)) => NTuple(arrows.map(_(pred)))
 
- 	case (pred , self@Tuple(arrows)) =>{
-	  val xs = arrows.map(_(pred));
-	  TupleObject(xs.map(_._1)) -> 
-	  NTuple(xs.map(_._2))
-	}
-
- 	case (pred@(obj,col) , self@NamedTuple(namedarrows)) =>{
-	  val xs = for {(s,arr) <- namedarrows
-					val (obj,c) = arr(pred)
-				  } 
-			   yield (s,c,obj)
-	  TupleObject(xs.map(_._3)) -> 
-	  NamedTupleQExp(col
-		,xs.map{case (x,y,_)=>(x,y)})
-	}
+ 	case (pred, self@NamedTuple(ns)) =>
+	  NamedTupleQExp(pred, ns.map{case (s,a) => (s,a(pred))})
   }
 
   def =:=(right:Arrow) = {OpArrows.=:=(this,right)}

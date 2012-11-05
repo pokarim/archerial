@@ -89,7 +89,10 @@ case class VList(xs: Value*) extends Value
 
 case class VTuple(xs: Value*) extends Value
 
-case class NamedVTuple(namedValues: (String,Value)*) extends Value
+case class NamedVTuple(namedValues: (String,Value)*) extends Value{
+  val map = namedValues.toMap
+  def apply(name:String)=map(name)
+}
 
 case class VStream(xs: Seq[Value]) extends Value{
   def map(f : Value => Value) = VStream(xs.map(f))

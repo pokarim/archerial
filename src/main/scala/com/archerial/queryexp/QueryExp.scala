@@ -26,8 +26,6 @@ import com.pokarim.pprinter.exts.ToDocImplicits._
 
 sealed trait QueryExp extends AbstractQueryExp
 
-
-
 trait Columnable extends QueryExp{
   def qexpCol = QExpCol(this)
   def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
