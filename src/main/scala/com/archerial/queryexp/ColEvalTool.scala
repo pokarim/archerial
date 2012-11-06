@@ -24,7 +24,7 @@ import scala.collection.immutable
 
 object ColEvalTool{
 
-  def eval(colExp:ColExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): SeqValue = {
+  def eval(colExp:ColExp, vcol:ColExp, values:SeqValue, getter:RowsGetter,dropNull:Boolean=true ): SeqValue = {
 	if(!getter.dict.contains((vcol,colExp))){
 	  pprn("vcol -> colExp",(vcol,colExp))
 	}

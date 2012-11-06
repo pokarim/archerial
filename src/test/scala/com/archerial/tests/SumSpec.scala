@@ -146,16 +146,29 @@ Sum(AllOf(Order.Id) )
 	//Sum(staffs >>> sub >>> height) 
 complex1
 
-		AllOf(Staff.Sex) >>> NamedTuple("name" ->
-		  (~Staff.sex >>> name))
+		AllOf(Staff.Sex) >>> NamedTuple(
+		  "name" -> (~Staff.sex >>> name))
 
 
-    {staffs >>> boss }
+//    {staffs >>> boss }
 //      """[ 1, 2, 1 ]"""
 
-Sum(staffs >>> height)
+//Sum(staffs >>> height)
 
 //staffs >>> 
+
+    {staffs >>> Filter(boss >>> name =:= "Guido") >>> name
+           }
+            
+
+		staffs >>> (Staff.Id.id * Staff.Id.id)
+		Sum(staffs >>> (Staff.Id.id * Staff.Id.id))
+
+		staffs >>> (boss * Staff.Id.id)
+		Sum(staffs >>> (boss * Staff.Id.id))
+		Avg(staffs >>> (boss * Staff.Id.id))
+
+		staffs >>> (boss * Staff.Id.id)
 	  }
 	  //pprn(sum1.eval())
 	  val exp = arr.queryExp
@@ -168,22 +181,22 @@ Sum(staffs >>> height)
 		}
 		//pprn("exp:",exp)
 		//pprn("result:",QueryExpTools.getCols(exp))
-		pprn()
-		val dict = RowsGetter.getDict(exp,trees)
-		pprn(dict)
-		// pprn("tableNodeList",exp.tableNodeList)
+		pprn("trees:",trees)
 		
-		// pprn("exp.tableNodeList",exp.tableNodeList)
+		pprn("all:",trees.head.allTableExpsWithUnit)
+		if (true){
+		val dict = RowsGetter.getDict(exp,trees)
+		val t2p = RowsGetter.tree2pair(exp,trees)
+		import RowsGetter._
+		import QueryExpTools._
+		pprn("getCols(qexp)",getCols(exp))
+		pprn("t2p",t2p)
+		pprn(("dict",dict))
+		}
+		pprn(exp.eval())
 
-//		 pprn("eval:",exp.eval())
-		//pprn("dp:",QueryExpTools.directParents(Left(exp)))
-		//pprn("tableNodeList",exp.tableNodeList)
-		// for (t <- exp.tableNodeList)
-		//   pprn((t,t.dependentParents))
-		val colInfo = TreeColInfo(
-		  exp.col2table, //OM
-		  trees)
-		 pprn("trees:",trees)
+
+
 		//pprn("colInfo.table2col",colInfo.table2col.pairs)
 		// val getter = RowsGetter(colInfo)
 		// val tableExps = trees.head.getAllTableExps.toSeq
@@ -192,7 +205,6 @@ Sum(staffs >>> height)
 		// val select = SelectGen.gen2(tree.depTables,cols,Nil)
 		// pprn()
 		// pprn(QueryExpTools.colNodeList(exp))
-		pprn(exp.eval())
 
 	//val ts = QueryExpTools.getContainTables(Right(tableExps))
 

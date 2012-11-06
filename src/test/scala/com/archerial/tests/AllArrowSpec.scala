@@ -130,7 +130,7 @@ class AllArrowSpec extends Specification {
 		
 		val vs = exp.eval(
 	  	  UnitTable.pk,
-	  	  List(UnitValue),
+	  	  VList(UnitValue),
 	  	  getter)
 		 pprn(vs)
 		// exp.eval()

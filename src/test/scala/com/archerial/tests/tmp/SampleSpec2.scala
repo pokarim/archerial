@@ -131,7 +131,7 @@ class SampleSpec2 extends Specification {
 	
 	val vs = exp.eval(
 	  UnitTable.pk,
-	  List(UnitValue),
+	  VList(UnitValue),
 	  getter)
 	pprn(vs)
 

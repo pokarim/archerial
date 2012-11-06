@@ -50,13 +50,13 @@ trait AbstractQueryExp4Tree {
 
 trait AbstractQueryExp extends AbstractQueryExp4Tree{
   this:QueryExp => ;
-  def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):Seq[Value] = {
+  def eval(sp:QueryExp => List[TableTree]=SimpleGenTrees.gen)(implicit connection: java.sql.Connection):SeqValue = {
 	val trees = sp(this)
 	val colInfo = TreeColInfo(col2table,trees)
 	val getter = RowsGetter(colInfo,this)(connection)
 	val vs = eval(
 	  UnitTable.pk,
-	  List(UnitValue),
+	  VList(Seq(UnitValue)),
 	  getter)
 	vs
   }
@@ -67,7 +67,7 @@ trait AbstractQueryExp extends AbstractQueryExp4Tree{
 
   def toShortString:String = toString
 
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value]
+  def eval(colExp:ColExp, values:SeqValue, getter:RowsGetter ): SeqValue
   def evalCol(colExp:ColExp):ColExp = colExp
   
   def getDependentCol():Stream[ColExp]

@@ -28,7 +28,7 @@ sealed trait QueryExp extends AbstractQueryExp
 
 trait Columnable extends QueryExp{
   def qexpCol = QExpCol(this)
-  def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
+  def eval(vcol:ColExp, values:SeqValue, getter:RowsGetter ):SeqValue = 
   ColEvalTool.eval(qexpCol, vcol, values, getter)
   def row2value(row:Row ): Value = row.d(qexpCol)
   def getDependentCol():Stream[ColExp] = Stream(qexpCol)
@@ -63,7 +63,7 @@ trait ColumnableBinOp extends Columnable with BinOp {
 }
 
 trait NonColumnableBinOp extends BinOp {
-  override def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
+  override def eval(col:ColExp, values:SeqValue, getter:RowsGetter ):SeqValue = {
         for {Val(l,ln) <- left.eval(col,values,getter)
              Val(r,rn) <- right.eval(col,values,getter)
              val v = getRawValue(l,r)}
@@ -120,7 +120,8 @@ trait ConstantQueryExp extends QueryExp {
 }
 case class ConstantExp(rawVal:RawVal) extends ConstantQueryExp {
   def getDependentCol():Stream[ColExp] = Stream.Empty
-  def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = List(Val(rawVal,1))
+  def eval(col:ColExp, values:SeqValue, getter:RowsGetter ):SeqValue =
+	VList(Seq(Val(rawVal,1)))
 
   override def row2value(row:Row ): Value =
     Val(rawVal,1)
@@ -135,7 +136,7 @@ object UnitCol extends Col(UnitTable.pk)
 case class ConstCol(constColExp:ConstantColExp) extends ConstantQueryExp{
   def rawVal:RawVal = constColExp.value
 
-  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter) = 
+  override def eval(vcol:ColExp, values:SeqValue, getter:RowsGetter) = 
   ColEvalTool.eval(
     constColExp, vcol, values, getter)
 
@@ -178,7 +179,7 @@ case class Col(colNode: ColNode) extends QueryExp{
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
 
   override def evalCol(colExp:ColExp):ColExp = colNode
-  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = 
+  override def eval(vcol:ColExp, values:SeqValue, getter:RowsGetter ):SeqValue = 
   ColEvalTool.eval(colNode, vcol, values, getter)
 }
 
@@ -186,7 +187,7 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
   def keyExp = keycol
   def valExps = exps.map(_._2)
 
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
+  def eval(colExp:ColExp, values:SeqValue, getter:RowsGetter ): SeqValue = {
     val ks = keyExp.eval(colExp,values,getter).distinct
     val kcol = keyExp.evalCol(colExp)
     for {k <- ks}
@@ -194,7 +195,7 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
       NamedVTuple(("__id__", VList(k)) :: 
       (for {(name,vexp) <- exps}
        yield (name,
-              VList(vexp.eval(kcol,List(k),getter).toSeq :_* ))
+              VList(vexp.eval(kcol,VList(Seq(k)),getter).toSeq))
             ) :_*)
     }
   }
@@ -203,14 +204,14 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
 
 case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
   assert(!exps.isEmpty,"!exps.isEmpty")
-  def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
+  def eval(colExp:ColExp, values:SeqValue, getter:RowsGetter ): SeqValue = {
     val ks = keyExp.eval(colExp,values,getter).distinct
     val kcol = keyExp.evalCol(colExp)
     for {k <- ks}
     yield {
       VTuple(VList(k) :: 
       (for {vexp <- valExps}
-       yield VList(vexp.eval(kcol,List(k),getter).toSeq :_* )) :_*)
+       yield VList(vexp.eval(kcol,VList(Seq(k)),getter).toSeq :_* )) :_*)
     }
   }
 
@@ -226,7 +227,7 @@ case class NonNullQExp(col:QueryExp) extends Columnable{
 }
 
 trait AggregateFuncQExp extends Columnable{
-  override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
+  override def eval(vcol:ColExp, values:SeqValue, getter:RowsGetter ):SeqValue = {
     val vs = ColEvalTool.eval(
       qexpCol, vcol, values, getter,false)
     if (vs.isEmpty) 

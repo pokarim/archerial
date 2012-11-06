@@ -128,7 +128,7 @@ class ArrowSpec2 extends Specification {
 	  //pprn("table_tree:",colInfo.table_tree.pairs)
 	  val vs = exp.eval(
 	  	UnitTable.pk,
-	  	List(UnitValue),
+	  	VList(UnitValue),
 	  	getter)
 	  pprn(vs)
 	}	
@@ -170,7 +170,7 @@ class ArrowSpec2 extends Specification {
 	  //pprn("table_tree:",colInfo.table_tree.pairs)
 	  val vs = exp.eval(
 	  	UnitTable.pk,
-	  	List(UnitValue),
+	  	VList(UnitValue),
 	  	getter)
 
 	  val join = trees(2).node
@@ -282,7 +282,7 @@ class ArrowSpec2 extends Specification {
 	  val getter = RowsGetter(colInfo,exp)
 	  val vs = exp.eval(
 	  	UnitTable.pk,
-	  	List(UnitValue),
+	  	VList(UnitValue),
 	  	getter)
 	}
 	if(true)
