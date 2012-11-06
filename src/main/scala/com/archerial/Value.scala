@@ -19,6 +19,9 @@ import anorm.toParameterValue
 import anorm.ParameterValue
 import anorm._
 import com.archerial.utils.implicits._
+import scala.collection.SeqLike
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.{Builder,ArrayBuffer}
 
 abstract class RawVal() {
   def value:Any
@@ -85,11 +88,34 @@ object NotImplemented extends ErrorValue("Not Implemented")
 
 case class VPair(left:Value, right:Value) extends Value
 
-trait SeqValue extends Value with Seq[Value]
-case class VList(xs: Value*) extends SeqValue{
+trait SeqValue extends Value with Seq[Value] with SeqLike[Value, SeqValue] {
+  override def newBuilder: Builder[Value, VList] = VList.newBuilder
+}
+object SeqValue{
+  implicit def canBuildFrom: CanBuildFrom[SeqValue, Value, SeqValue] = 
+    VList.canBuildFrom
+}
+object VList {
+  def fromSeq(buf: Seq[Value]): VList = {
+    VList(buf :_*)
+  }
+  def newBuilder: Builder[Value, VList] =
+    new ArrayBuffer[Value] mapResult (VList.fromSeq)
+
+  implicit def canBuildFrom: CanBuildFrom[SeqValue, Value, SeqValue] = 
+    new CanBuildFrom[SeqValue, Value, SeqValue] {
+      def apply(): Builder[Value, SeqValue] = newBuilder
+      def apply(from: SeqValue): Builder[Value, SeqValue] = newBuilder
+    }  
+  def apply[X: ClassManifest](xs: Value*):VList = VList.apply(xs)
+}
+case class VList(xs: Seq[Value]) extends SeqValue{
   def length = xs.length
   def apply(i:scala.Int) = xs.apply(i)
   def iterator = xs.iterator
+  override def newBuilder: Builder[Value, VList] = VList.newBuilder
+
+
 }
 
 case class VTuple(xs: Value*) extends Value

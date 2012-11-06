@@ -16,7 +16,7 @@
 package com.archerial.queryexp
 
 import com.archerial.Column
-import com.archerial.Value
+import com.archerial.{Value,VList,SeqValue}
 import com.archerial.utils._
 import com.pokarim.pprinter._
 import com.pokarim.pprinter.exts.ToDocImplicits._
@@ -24,16 +24,17 @@ import scala.collection.immutable
 
 object ColEvalTool{
 
-  def eval(colExp:ColExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): Seq[Value] = {
+  def eval(colExp:ColExp, vcol:ColExp, values:Seq[Value], getter:RowsGetter,dropNull:Boolean=true ): SeqValue = {
 	if(!getter.dict.contains((vcol,colExp))){
 	  pprn("vcol -> colExp",(vcol,colExp))
 	}
 	assert(getter.dict.contains((vcol,colExp)))
-	val vs = for {x <- values
+	val vs = for {x <- values//.asInstanceOf[SeqValue]
 				  v <- getter.dict((vcol,colExp))(x)
 				  if !dropNull || v.nonNull	}
 			 yield v
 	vs
+	VList(vs:_*)
   }
 }
 

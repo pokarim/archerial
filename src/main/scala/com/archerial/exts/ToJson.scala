@@ -48,7 +48,7 @@ object ToJson{
   implicit def toJValue(xs:Seq[Value]):JValue = 
 	vseq2JArray(xs)
   implicit def toJValue(self:Value):JValue = self match {
-	case VList(xs @_*) => vseq2JArray(xs)
+	case VList(xs) => vseq2JArray(xs)
 	case VTuple(xs @_*) => vseq2JArray(xs)
 	case NamedVTuple(namedValues @_*) =>
 	  JObject(namedValues.map{case (s,v)=> 

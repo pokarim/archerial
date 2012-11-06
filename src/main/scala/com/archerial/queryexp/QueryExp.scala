@@ -41,7 +41,7 @@ trait BinOp extends QueryExp{
   val left:QueryExp
   val right:QueryExp
   override def constants:Seq[ConstantQueryExp] = 
-	left.constants ++ right.constants
+    left.constants ++ right.constants
 
   
   def SQLOpString:String
@@ -50,60 +50,60 @@ trait BinOp extends QueryExp{
 
   
   def getSQL(map: TableIdMap):String = {
-	val l = left.getSQL(map)
-	val r = right.getSQL(map)
-	l + " "+ SQLOpString + " " + r
+    val l = left.getSQL(map)
+    val r = right.getSQL(map)
+    l + " "+ SQLOpString + " " + r
   }
 }
 
 trait ColumnableBinOp extends Columnable with BinOp {
   override def getDependentCol():Stream[ColExp] = 
-	qexpCol #:: // TODO
-	left.getDependentCol() ++ right.getDependentCol()
+    qexpCol #:: // TODO
+    left.getDependentCol() ++ right.getDependentCol()
 }
 
 trait NonColumnableBinOp extends BinOp {
   override def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
-  	  for {Val(l,ln) <- left.eval(col,values,getter)
-  		   Val(r,rn) <- right.eval(col,values,getter)
-  		   val v = getRawValue(l,r)}
-  	  yield Val(v, ln * rn)
-  	}
+        for {Val(l,ln) <- left.eval(col,values,getter)
+             Val(r,rn) <- right.eval(col,values,getter)
+             val v = getRawValue(l,r)}
+        yield Val(v, ln * rn)
+      }
 
   override def row2value(row:Row ): Value =
-  	(left.row2value(row),right.row2value(row)) match {
-  	  case (Val(l,ln),Val(r,rn)) =>
-  		Val(getRawValue(l,r), ln * rn)} 
+      (left.row2value(row),right.row2value(row)) match {
+        case (Val(l,ln),Val(r,rn)) =>
+          Val(getRawValue(l,r), ln * rn)} 
 }
 
 object OpExps {
   case class *(left:QueryExp, right:QueryExp) extends ColumnableBinOp{
-	def getRawValue(left:RawVal,right:RawVal):RawVal =
-	  (left,right) match{
-		case (RawVal.Int(x),RawVal.Int(y)) =>
-		  RawVal.Int(x * y)
-		case (RawVal.Long(x),RawVal.Long(y)) =>
-		  RawVal.Long(x * y)
-	  }
-	def SQLOpString:String = "*"
+    def getRawValue(left:RawVal,right:RawVal):RawVal =
+      (left,right) match{
+        case (RawVal.Int(x),RawVal.Int(y)) =>
+          RawVal.Int(x * y)
+        case (RawVal.Long(x),RawVal.Long(y)) =>
+          RawVal.Long(x * y)
+      }
+    def SQLOpString:String = "*"
   }
 
   case class =:=(left:QueryExp, right:QueryExp) extends ColumnableBinOp{
 
-	def getRawValue(left:RawVal,right:RawVal):RawVal =
-	  RawVal.Bool(left == right)
-	
-	def SQLOpString:String = "="
+    def getRawValue(left:RawVal,right:RawVal):RawVal =
+      RawVal.Bool(left == right)
+    
+    def SQLOpString:String = "="
   }
 
   case class And(left:QueryExp, right:QueryExp) extends ColumnableBinOp{
 
-	def getRawValue(left:RawVal,right:RawVal):RawVal =
-	  (left,right) match {
-		case (RawVal.Bool(l),RawVal.Bool(r)) =>
-		  RawVal.Bool(l && r)
-	  }
-	def SQLOpString:String = "AND"
+    def getRawValue(left:RawVal,right:RawVal):RawVal =
+      (left,right) match {
+        case (RawVal.Bool(l),RawVal.Bool(r)) =>
+          RawVal.Bool(l && r)
+      }
+    def SQLOpString:String = "AND"
   }
 }
 
@@ -112,10 +112,10 @@ trait ConstantQueryExp extends QueryExp {
   override def constants:Seq[ConstantQueryExp] = List(this)
 
   def getSQL(map:TableIdMap):String = {
-	if (map.constMap.contains(this))
-	  "{%s}" format(map.constMap(this))
-	else
-	  rawVal.toSQLString
+    if (map.constMap.contains(this))
+      "{%s}" format(map.constMap(this))
+    else
+      rawVal.toSQLString
   }
 }
 case class ConstantExp(rawVal:RawVal) extends ConstantQueryExp {
@@ -123,11 +123,11 @@ case class ConstantExp(rawVal:RawVal) extends ConstantQueryExp {
   def eval(col:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = List(Val(rawVal,1))
 
   override def row2value(row:Row ): Value =
-	Val(rawVal,1)
+    Val(rawVal,1)
 }
 object Col{
   def apply(table: TableExp, column: Column) = 
-	new Col(ColNode(table,column))
+    new Col(ColNode(table,column))
 }
 
 object UnitCol extends Col(UnitTable.pk)
@@ -137,20 +137,20 @@ case class ConstCol(constColExp:ConstantColExp) extends ConstantQueryExp{
 
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter) = 
   ColEvalTool.eval(
-	constColExp, vcol, values, getter)
+    constColExp, vcol, values, getter)
 
   def value = Val(constColExp.value,1)
   def getDependentCol():Stream[ColExp] = 
-	Stream.Empty 
+    Stream.Empty 
   def row2value(row:Row ): Value = value
 
 }
 case class Col(colNode: ColNode) extends QueryExp{
   def getDependentCol():Stream[ColExp] = 
-	if (colNode == pk)
-	  Stream(pk)
-	else
-	  Stream(pk,colNode)
+    if (colNode == pk)
+      Stream(pk)
+    else
+      Stream(pk,colNode)
 
   def table = colNode.table
   def column = colNode.column
@@ -158,21 +158,21 @@ case class Col(colNode: ColNode) extends QueryExp{
   val pk = table.primaryKeyCol
 
   def row2value(row:Row ): Value = {
-	val rows = List(row)
-	(if (this == pk)
-	  for (row <- rows) yield row.d(colNode)
-	else {
-	  val kvs = for (row <- rows; val pkv = row.d(pk); if !pkv.isNull)
-				yield (pkv, row.d(colNode));
-	  SeqUtil.distinctBy1stAndGet2nd(kvs).toList
-	}).head
+    val rows = List(row)
+    (if (this == pk)
+      for (row <- rows) yield row.d(colNode)
+    else {
+      val kvs = for (row <- rows; val pkv = row.d(pk); if !pkv.isNull)
+                yield (pkv, row.d(colNode));
+      SeqUtil.distinctBy1stAndGet2nd(kvs).toList
+    }).head
   }
-  def getSQL(map: TableIdMap):String =	
-	if (map.map.contains(table))
-	  "%s.%s" format(map.gets(table).get, column.name)
-	else{
-	  "error"
-	}
+  def getSQL(map: TableIdMap):String =    
+    if (map.map.contains(table))
+      "%s.%s" format(map.gets(table).get, column.name)
+    else{
+      "error"
+    }
 
   override def toShortString:String = column.name
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
@@ -187,16 +187,16 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
   def valExps = exps.map(_._2)
 
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val ks = keyExp.eval(colExp,values,getter).distinct
-	val kcol = keyExp.evalCol(colExp)
-	for {k <- ks}
-	yield {
-	  NamedVTuple(("__id__", VList(k)) :: 
-	  (for {(name,vexp) <- exps}
-	   yield (name,
-			  VList(vexp.eval(kcol,List(k),getter).toSeq :_* ))
-			) :_*)
-	}
+    val ks = keyExp.eval(colExp,values,getter).distinct
+    val kcol = keyExp.evalCol(colExp)
+    for {k <- ks}
+    yield {
+      NamedVTuple(("__id__", VList(k)) :: 
+      (for {(name,vexp) <- exps}
+       yield (name,
+              VList(vexp.eval(kcol,List(k),getter).toSeq :_* ))
+            ) :_*)
+    }
   }
 
 }
@@ -204,14 +204,14 @@ case class NamedTupleQExp(keycol:QueryExp,exps :List[(String,QueryExp)]) extends
 case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
   assert(!exps.isEmpty,"!exps.isEmpty")
   def eval(colExp:ColExp, values:Seq[Value], getter:RowsGetter ): Seq[Value] = {
-	val ks = keyExp.eval(colExp,values,getter).distinct
-	val kcol = keyExp.evalCol(colExp)
-	for {k <- ks}
-	yield {
-	  VTuple(VList(k) :: 
-	  (for {vexp <- valExps}
-	   yield VList(vexp.eval(kcol,List(k),getter).toSeq :_* )) :_*)
-	}
+    val ks = keyExp.eval(colExp,values,getter).distinct
+    val kcol = keyExp.evalCol(colExp)
+    for {k <- ks}
+    yield {
+      VTuple(VList(k) :: 
+      (for {vexp <- valExps}
+       yield VList(vexp.eval(kcol,List(k),getter).toSeq :_* )) :_*)
+    }
   }
 
   def keyExp = exps.head
@@ -219,70 +219,70 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
 
 }
 case class NonNullQExp(col:QueryExp) extends Columnable{
-  def getSQL(map: TableIdMap):String =	{
-	"(%s is not null)" format col.getSQL(map)
+  def getSQL(map: TableIdMap):String =    {
+    "(%s is not null)" format col.getSQL(map)
   }
   override def constants:Seq[ConstantQueryExp] = col.constants
 }
 
 trait AggregateFuncQExp extends Columnable{
   override def eval(vcol:ColExp, values:Seq[Value], getter:RowsGetter ):Seq[Value] = {
-	val vs = ColEvalTool.eval(
-	  qexpCol, vcol, values, getter,false)
-	if (vs.isEmpty) 
-	 Seq(Val(RawVal.Int(0)))
-	else
-	  for {v <- vs}
-	  yield {
-		if (v.nonNull) v 
-		else Val(RawVal.Int(0))
-	  }
+    val vs = ColEvalTool.eval(
+      qexpCol, vcol, values, getter,false)
+    if (vs.isEmpty) 
+      VList(Val(RawVal.Int(0)))
+    else
+      for {v <- vs}
+      yield {
+        if (v.nonNull) v 
+        else Val(RawVal.Int(0))
+      }
   }
   override def constants:Seq[ConstantQueryExp] = 
-	valcol.constants
+    valcol.constants
   val valcol:QueryExp
   val source:GroupByNode
 }
 
 object AggregateFuncQExp{
   def unapply(x:AggregateFuncQExp):Option[(GroupByNode,QueryExp)] =
-	Some((x.source,x.valcol))
+    Some((x.source,x.valcol))
 }
 
 case class SumQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
-  def getSQL(map: TableIdMap):String =	{
-	"sum(%s)" format valcol.getSQL(map)
+  def getSQL(map: TableIdMap):String =    {
+    "sum(%s)" format valcol.getSQL(map)
   }
 }
 
 case class AvgQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
-  def getSQL(map: TableIdMap):String =	{
-	"avg(%s)" format valcol.getSQL(map)
+  def getSQL(map: TableIdMap):String =    {
+    "avg(%s)" format valcol.getSQL(map)
   }
 }
 
 
 case class Exists(source:TableExp,cond:QueryExp) extends Columnable{
   val col :QueryExp = 
-		 ConstCol(ConstantColExp(
-		   WhereNode(source, cond),
-		   RawVal.Int(1)))
+         ConstCol(ConstantColExp(
+           WhereNode(source, cond),
+           RawVal.Int(1)))
 
   override def constants:Seq[ConstantQueryExp] = cond.constants
 
   override lazy val colList = List(col.colList.head)
-  def getSQL(map: TableIdMap):String =	{
-	val any = this
-	val exp = col
-	val trees = SimpleGenTrees.oneTree(exp, source).children
-	require(trees.length==1,trees.length) // TODO cross join
-	val tree = trees.head
-	val colList = List(col.colList.head)
-	val col2table = Rel.gen[ColExp,TableExp](
-	  colList)((x:ColExp) => x.tables)
-	val colInfo = TreeColInfo(col2tableOM, trees)
-	val select = SelectGen.gen(tree,colList,Some(map))
-	val sql = select.getSQL(None)
-	"exists (%s)" format sql._1
+  def getSQL(map: TableIdMap):String =    {
+    val any = this
+    val exp = col
+    val trees = SimpleGenTrees.oneTree(exp, source).children
+    require(trees.length==1,trees.length) // TODO cross join
+    val tree = trees.head
+    val colList = List(col.colList.head)
+    val col2table = Rel.gen[ColExp,TableExp](
+      colList)((x:ColExp) => x.tables)
+    val colInfo = TreeColInfo(col2tableOM, trees)
+    val select = SelectGen.gen(tree,colList,Some(map))
+    val sql = select.getSQL(None)
+    "exists (%s)" format sql._1
   }
 }
