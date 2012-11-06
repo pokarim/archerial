@@ -171,9 +171,8 @@ case class Col(colNode: ColNode) extends QueryExp{
   def getSQL(map: TableIdMap):String =    
     if (map.map.contains(table))
       "%s.%s" format(map.gets(table).get, column.name)
-    else{
+    else
       "error"
-    }
 
   override def toShortString:String = column.name
   override def toString:String = "Col(%s:: %s)" format(column.name, table)
@@ -211,7 +210,7 @@ case class NTuple(exps :List[QueryExp]) extends QueryExp with TupleExpBase{
     yield {
       VTuple(VList(k) :: 
       (for {vexp <- valExps}
-       yield VList(vexp.eval(kcol,VList(Seq(k)),getter).toSeq :_* )) :_*)
+       yield VList(vexp.eval(kcol,VList(Seq(k)),getter).toSeq )) :_*)
     }
   }
 
@@ -229,18 +228,15 @@ case class NonNullQExp(col:QueryExp) extends Columnable{
 trait AggregateFuncQExp extends Columnable{
   override def eval(vcol:ColExp, values:SeqValue, getter:RowsGetter ):SeqValue = {
     val vs = ColEvalTool.eval(
-      qexpCol, vcol, values, getter,false)
+	  qexpCol, vcol, values, getter,false)
     if (vs.isEmpty) 
       VList(Val(RawVal.Int(0)))
     else
       for {v <- vs}
-      yield {
-        if (v.nonNull) v 
-        else Val(RawVal.Int(0))
-      }
+      yield if (v.nonNull) v 
+			else Val(RawVal.Int(0))
   }
-  override def constants:Seq[ConstantQueryExp] = 
-    valcol.constants
+  override def constants:Seq[ConstantQueryExp] = valcol.constants
   val valcol:QueryExp
   val source:GroupByNode
 }
@@ -251,15 +247,13 @@ object AggregateFuncQExp{
 }
 
 case class SumQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
-  def getSQL(map: TableIdMap):String =    {
+  def getSQL(map: TableIdMap):String =
     "sum(%s)" format valcol.getSQL(map)
-  }
 }
 
 case class AvgQExp(source:GroupByNode,valcol:QueryExp) extends AggregateFuncQExp{
-  def getSQL(map: TableIdMap):String =    {
+  def getSQL(map: TableIdMap):String =
     "avg(%s)" format valcol.getSQL(map)
-  }
 }
 
 
@@ -273,16 +267,11 @@ case class Exists(source:TableExp,cond:QueryExp) extends Columnable{
 
   override lazy val colList = List(col.colList.head)
   def getSQL(map: TableIdMap):String =    {
-    val any = this
-    val exp = col
-    val trees = SimpleGenTrees.oneTree(exp, source).children
-    require(trees.length==1,trees.length) // TODO cross join
+    val trees = SimpleGenTrees.oneTree(col, source).children
+    require(trees.length==1, trees.length) // TODO cross join
     val tree = trees.head
     val colList = List(col.colList.head)
-    val col2table = Rel.gen[ColExp,TableExp](
-      colList)((x:ColExp) => x.tables)
-    val colInfo = TreeColInfo(col2tableOM, trees)
-    val select = SelectGen.gen(tree,colList,Some(map))
+    val select = SelectGen.gen(tree, colList, Some(map))
     val sql = select.getSQL(None)
     "exists (%s)" format sql._1
   }
