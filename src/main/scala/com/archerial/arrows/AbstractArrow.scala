@@ -63,6 +63,7 @@ trait AbstractArrow {
 		case NamedTuple(arrows) => {
 		  forS(values){
 			case v:NamedVTuple if v.contains("__id__") =>{
+			  //pprn("NamedVTuple")
 			  val VList(id) = v("__id__")
 			  val arrs = forS(arrows.filter{
 				case (n,_)=> v.contains(n)}){
@@ -70,13 +71,29 @@ trait AbstractArrow {
 					for {vs <- arrow.update(Seq(v(name)))
 						 _ <- UpdateInfo.update(arrow,id,vs.head)}
 					yield ()
-				  case _ => init[Updates]
+				  case (name,Composition(
+					col@ColArrow(t,d,c,dc,cc),arrow)) => {
+					  for {vs <- arrow.update(Seq(v(name)))
+						   _ <- UpdateInfo.update(col,id,vs.head)}
+					  yield ()
+						
+					  // pprn("huga")
+					  
+					  // pprn(name,l,r)
+					  // init[Updates]
+					}
+				  case x => {
+					init[Updates]
+				  }
 				}
 			  for {_ <- arrs} yield id
 			}
 		  }
 		}
-		case _ => return_(values)
+		case _ => {
+		  pprn("hoge",this,values)
+		  return_(values)
+		}
 	  }
   }
   
