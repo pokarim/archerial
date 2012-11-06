@@ -28,13 +28,12 @@ import scalaz.{Value => _, _}, Scalaz._
 
 import com.archerial.utils.StateUtil.{forS,return_}
 
-case class UpdateInfo(s:Stream[(ColArrow,Value,Value)]){
+case class Update(s:Stream[(ColArrow,Value,Value)]){
 }
-object UpdateInfo{
-  val empty = UpdateInfo(Stream.empty)
-  def update(arrow:ColArrow,id:Value,v:Value)= 
-	modify[UpdateInfo]((u) =>
-	  u.copy(s=(arrow, id, v) #:: u.s))
+object Update{
+  val empty = Update(Stream.empty)
+  def add(arrow:ColArrow,id:Value,v:Value) =
+	modify[Update]((u) => u.copy(s=(arrow, id, v) #:: u.s))
 }
 trait AbstractArrow {
   this:Arrow => ;
@@ -55,45 +54,37 @@ trait AbstractArrow {
 	  format(this,this.dom))
 	apply(UnitCol)
   }
-  type Updates = UpdateInfo//Stream[(ColArrow,Value,Value)]
-  def update(values:Seq[Value]):State[Updates, Seq[Value]] = {
+  type Updates = Update//Stream[(ColArrow,Value,Value)]
+
+
+  def namedTupleUpdate(values:SeqValue,arrows:Seq[(String,Arrow)]) :State[Updates, SeqValue] = {
+	val fors = forS(values){
+	  case v:NamedVTuple if v.contains("__id__") =>{
+		val VList(id) = v("__id__")
+		val a2v = for {(n,a) <- arrows if v.contains(n)} yield (a,v(n))
+		val arrs = forS(a2v){
+		  case (arrow:ColArrow, vs:SeqValue) =>
+			for {vs <- arrow.update(vs)
+				 _ <- Update.add(arrow,id,vs)}
+			yield ();
+		  case (Composition(left:ColArrow,right), vs:SeqValue) =>
+			for {vs <- right.update(vs)
+				 _ <- Update.add(left, id, vs)} yield ();
+		  case x => init[Updates]
+		}
+		for {_ <- arrs} yield id
+	  }
+	}
+	for (v <- fors) yield VList(v:_*)
+  }
+  
+  def update(values:SeqValue):State[Updates, SeqValue] = {
 	  this match {
 		case Composition(left,right) =>
 		  right.update(values)
-		case NamedTuple(arrows) => {
-		  forS(values){
-			case v:NamedVTuple if v.contains("__id__") =>{
-			  //pprn("NamedVTuple")
-			  val VList(id) = v("__id__")
-			  val arrs = forS(arrows.filter{
-				case (n,_)=> v.contains(n)}){
-				  case (name,arrow@ColArrow(t,d,c,dc,cc)) =>
-					for {vs <- arrow.update(Seq(v(name)))
-						 _ <- UpdateInfo.update(arrow,id,vs.head)}
-					yield ()
-				  case (name,Composition(
-					col@ColArrow(t,d,c,dc,cc),arrow)) => {
-					  for {vs <- arrow.update(Seq(v(name)))
-						   _ <- UpdateInfo.update(col,id,vs.head)}
-					  yield ()
-						
-					  // pprn("huga")
-					  
-					  // pprn(name,l,r)
-					  // init[Updates]
-					}
-				  case x => {
-					init[Updates]
-				  }
-				}
-			  for {_ <- arrs} yield id
-			}
-		  }
-		}
-		case _ => {
-		  pprn("hoge",this,values)
-		  return_(values)
-		}
+		case NamedTuple(arrows) =>
+		  namedTupleUpdate(values,arrows)
+		case _ => return_(values)
 	  }
   }
   

@@ -85,7 +85,12 @@ object NotImplemented extends ErrorValue("Not Implemented")
 
 case class VPair(left:Value, right:Value) extends Value
 
-case class VList(xs: Value*) extends Value
+trait SeqValue extends Value with Seq[Value]
+case class VList(xs: Value*) extends SeqValue{
+  def length = xs.length
+  def apply(i:scala.Int) = xs.apply(i)
+  def iterator = xs.iterator
+}
 
 case class VTuple(xs: Value*) extends Value
 
