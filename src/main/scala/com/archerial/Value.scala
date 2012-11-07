@@ -115,7 +115,6 @@ case class VList(xs: Seq[Value]) extends SeqValue{
   def iterator = xs.iterator
   override def newBuilder: Builder[Value, VList] = VList.newBuilder
 
-
 }
 
 case class VTuple(xs: Value*) extends Value

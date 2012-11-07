@@ -132,7 +132,7 @@ object SimpleGenTrees{
 		val directChildren = 
 		  children.filter(!getparents(_).exists(!set(_)))
 		cs <- forS(directChildren)(f(_))}
-	  yield TableTree(self, cs)
+	  yield TableTree(self, cs.toList)
 	}
 	f(root)(Set())._2
   }

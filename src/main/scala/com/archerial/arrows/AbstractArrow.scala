@@ -32,8 +32,14 @@ case class Update(s:Stream[(ColArrow,Value,Value)]){
 }
 object Update{
   val empty = Update(Stream.empty)
-  def add(arrow:ColArrow,id:Value,v:Value) =
+  def append(arrow:ColArrow,id:Value,v:Value) =
 	modify[Update]((u) => u.copy(s=(arrow, id, v) #:: u.s))
+
+  def updateAndAdd(arrow:ColArrow,id:Value,v:SeqValue):State[Update, Unit]=
+	for {vs <- arrow.update(v)
+		 _ <- append(arrow,id,vs)}
+	yield ();
+
 }
 trait AbstractArrow {
   this:Arrow => ;
@@ -54,31 +60,26 @@ trait AbstractArrow {
 	  format(this,this.dom))
 	apply(UnitCol)
   }
-  type Updates = Update//Stream[(ColArrow,Value,Value)]
-
-
-  def namedTupleUpdate(values:SeqValue,arrows:Seq[(String,Arrow)]) :State[Updates, SeqValue] = {
-	val fors = forS(values){
+  def namedTupleUpdate(values:SeqValue,arrows:Seq[(String,Arrow)]) :State[Update, SeqValue] = {
+	import Update.append
+	val fors = forS[Update,Value,Value,Seq](values){
 	  case v:NamedVTuple if v.contains("__id__") =>{
 		val VList(Seq(id)) = v("__id__")
 		val a2v = for {(n,a) <- arrows if v.contains(n)} yield (a,v(n))
 		val arrs = forS(a2v){
-		  case (arrow:ColArrow, vs:SeqValue) =>
-			for {vs <- arrow.update(vs)
-				 _ <- Update.add(arrow,id,vs)}
-			yield ();
+		  case (arrow:ColArrow, vs:SeqValue) => append(arrow, id, vs)
 		  case (Composition(left:ColArrow,right), vs:SeqValue) =>
-			for {vs <- right.update(vs)
-				 _ <- Update.add(left, id, vs)} yield ();
-		  case x => init[Updates]
+			right.update(vs) >>= {append(left, id, _)}
+		  case x => init[Update]
 		}
 		for {_ <- arrs} yield id
+		arrs >>=| (return_( id))
 	  }
 	}
 	for (v <- fors) yield VList(v:_*)
   }
   
-  def update(values:SeqValue):State[Updates, SeqValue] = {
+  def update(values:SeqValue):State[Update, SeqValue] = {
 	  this match {
 		case Composition(left,right) =>
 		  right.update(values)

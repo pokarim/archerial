@@ -279,32 +279,26 @@ object SeqUtil {
   }
 }
 
-case class LiftSt[A,B,S](seq: Seq[A]){
-  import scalaz.{Value => _, _}
-  import Scalaz._
-  import StateUtil.reduceStates
 
-  def map(f : A => State[S,B]) = {
-	for {q <- init[S]}
-	yield reduceStates[S,B](for (x <- seq) yield f(x))(q)
-  }
-}
+
+import scala.collection.{TraversableLike,SeqLike}
+import scala.collection.generic.CanBuildFrom
 
 object StateUtil{
   import scalaz.{Value => _, _}
   import Scalaz._
 
   def return_[S,A](x:A) = init[S].map((_) => x)
-  def mapS[S,A,B](f:A => State[S,B],xs:Seq[A]):State[S,List[B]] = 
-  	reduceStates(xs.map(f))
 
-  def forS[S,A,B](xs:Seq[A])(f:A => State[S,B]):State[S,List[B]] = 
-  	reduceStates(xs.map(f))
-  
-  def reduceStates[S,A](xs: Seq[State[S,A]]):State[S,List[A]] = {
-	xs.reverse.foldLeft(
-	  init[S].map(s => Nil:List[A])
-	)((ys:State[S,List[A]], xs:State[S,A] ) =>  
-	  for (x <- xs; y:List[A] <- ys) yield x :: y)
-  }
+   def forS[S,A,B,C[SB] <: SeqLike[SB, C[SB]]](xs:C[A])(f:A => State[S,B])(implicit bf: CanBuildFrom[C[A], State[S,B], C[State[S,B]]], bf2: CanBuildFrom[C[B], B, C[B]]):State[S,C[B]] = {
+   	 reduceStates[S,B,C](xs.map(f):C[State[S,B]])
+   }
+
+	def reduceStates[S,A,C[SA] <: SeqLike[SA, C[SA]]](xs: C[State[S,A]])(implicit bf: CanBuildFrom[C[A], A, C[A]]):State[S,C[A]] = {
+  	  xs.reverse.foldLeft(
+		return_[S,C[A]](bf.apply.result)
+  	  )((ys:State[S,C[A]], xs:State[S,A] ) =>  
+  		for (x <- xs; y:C[A] <- ys) yield x +: y)
+	}
+
 }
