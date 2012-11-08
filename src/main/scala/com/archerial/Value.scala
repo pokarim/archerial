@@ -39,7 +39,7 @@ object RawVal{
 	def toSQLString = "null"
     def toParameterValue:ParameterValue[Null] = anorm.toParameterValue(null)
 	override def toString = "null"
-  override def toShortStr:String = toString
+    override def toShortStr:String = toString
 	def value:Null = {assert(false,"null error");null}
   }
   case class Int (value: scala.Int) extends Type {
@@ -61,9 +61,9 @@ object RawVal{
   }
 }
 
-object Value{
-}
-abstract class Value {
+object Value{}
+
+trait Value {
   final def isNull = this match {case Val(RawVal.Null,_) => true; case _ => false}
   final def nonNull = !isNull
   def one:VList = VList(this) 
@@ -88,59 +88,39 @@ object NotImplemented extends ErrorValue("Not Implemented")
 
 case class VPair(left:Value, right:Value) extends Value
 
-trait VSeq[V ] extends Value with Seq[V] with SeqLike[V, VSeq[V]] {
-  override def newBuilder: Builder[V, VSeq[V]] = VList.newBuilder.asInstanceOf[Builder[V, VSeq[V]]]
 
-//  override def newBuilder: Builder[V, VList] = VList.newBuilder
-}
 object `package` {
   type SeqValue = VSeq[Value]
 }
-object VSeq{
-  // implicit def canBuildFrom: CanBuildFrom[VSeq[Value], Value, VSeq[Value]] = 
-  //   VList.canBuildFrom
-
-
-//VSeq[Value],State[Update,Value],VSeq[State[Update,Value]]]]
-
-  implicit def canBuildFrom: CanBuildFrom[VSeq[Value], Value, VSeq[Value]] = 
-    VList.canBuildFrom
-
-  implicit def canBuildFrom2[A]: CanBuildFrom[VSeq[A], Value, VSeq[Value]] = 
-    VList.canBuildFrom2
-
-  implicit def canBuildFrom3: CanBuildFrom[Seq[Value], Value, VSeq[Value]] = 
-    VList.canBuildFrom3
-
+trait VSeq[V ] extends Value with Seq[V] with SeqLike[V, VSeq[V]] 
+{
+  override def newBuilder: Builder[V, VSeq[V]] = VList.newBuilder.asInstanceOf[Builder[V, VSeq[V]]]
 }
-object VList {
-  def fromSeq(buf: Seq[Value]): VList = {
-    VList(buf :_*)
-  }
+object VSeq{
+  implicit def canBuildFrom: CanBuildFrom[Seq[Value], Value, VSeq[Value]]=
+    VList.canBuildFrom
+}
+
+import scala.collection.generic.SeqFactory
+object VList{
+  
+  def fromSeq(buf: Seq[Value]): VList = VList(buf)
+
   def newBuilder: Builder[Value, VList] =
     new ArrayBuffer[Value] mapResult (VList.fromSeq)
 
-  implicit def canBuildFrom: CanBuildFrom[VSeq[Value], Value, VSeq[Value]] = 
-    new CanBuildFrom[VSeq[Value], Value, VSeq[Value]] {
-      def apply(): Builder[Value, VSeq[Value]] = newBuilder
-      def apply(from: VSeq[Value]): Builder[Value, VSeq[Value]] = newBuilder
-    }  
-
-  implicit def canBuildFrom2[A]: CanBuildFrom[VSeq[A], Value, VSeq[Value]] = 
-    new CanBuildFrom[VSeq[A], Value, VSeq[Value]] {
-      def apply(): Builder[Value, VSeq[Value]] = newBuilder
-      def apply(from: VSeq[A]): Builder[Value, VSeq[Value]] = newBuilder
-    }  
-
-  implicit def canBuildFrom3: CanBuildFrom[Seq[Value], Value, VSeq[Value]] = 
-    new CanBuildFrom[Seq[Value], Value, VSeq[Value]] {
-      def apply(): Builder[Value, VSeq[Value]] = newBuilder
-      def apply(from: Seq[Value]): Builder[Value, VSeq[Value]] = newBuilder
-    }  
+  implicit def canBuildFrom: CanBuildFrom[Seq[Value], Value, VSeq[Value]]
+  = new CanBuildFrom[Seq[Value], Value, VSeq[Value]] {
+    def apply(): Builder[Value, VSeq[Value]] = newBuilder
+    def apply(from: Seq[Value]): Builder[Value, VSeq[Value]] = newBuilder
+  }  
 
   def apply[X: ClassManifest](xs: Value*):VList = VList.apply(xs)
+  //def apply(xs: Seq[Value]):VList = VList.apply(xs)
+  // def unapplySeq(target:VList) :Option[List[Value]] = 
+  //   Some(target.xs.toList)
 }
-case class VList(xs: Seq[Value]) extends VSeq[Value]{
+case class VList(val xs: Seq[Value]) extends VSeq[Value]{
   def length = xs.length
   def apply(i:scala.Int) = xs.apply(i)
   def iterator = xs.iterator
@@ -154,6 +134,7 @@ case class NamedVTuple(namedValues: (String,Value)*) extends Value{
   val map = namedValues.toMap
   def apply(name:String) = map(name)
   def contains(name:String) = map.contains(name)
+  def get(name:String) = map.get(name)
 }
 
 case class VStream(xs: Seq[Value]) extends Value{

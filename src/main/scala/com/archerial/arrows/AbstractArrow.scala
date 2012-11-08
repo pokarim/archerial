@@ -60,24 +60,19 @@ trait AbstractArrow {
 	  format(this,this.dom))
 	apply(UnitCol)
   }
+  import Update.append
   def namedTupleUpdate(values:SeqValue,arrows:Seq[(String,Arrow)]) :State[Update, SeqValue] = {
-	import Update.append
-	val fors = forS(values){
+	forS(values){
 	  case v:NamedVTuple if v.contains("__id__") =>{
 		val VList(Seq(id)) = v("__id__")
-		val a2v = for {(n,a) <- arrows if v.contains(n)} yield (a,v(n))
-		val arrs = forS(a2v){
-		  case (arrow:ColArrow, vs:SeqValue) => append(arrow, id, vs)
-		  case (Composition(left:ColArrow,right), vs:SeqValue) =>
+		forS(for {(n,a) <- arrows} yield (a,v.get(n))){
+		  case (arrow:ColArrow, Some(vs:VList)) => append(arrow, id, vs)
+		  case (Composition(left:ColArrow,right), Some(vs:VList)) =>
 			right.update(vs) >>= {append(left, id, _)}
 		  case x => init[Update]
-		}
-		for {_ <- arrs} yield id
-		arrs >>=| (return_( id))
+		} >>=| return_(id)
 	  }
 	}
-	fors
-	//for (v <- fors) yield VList(v:_*)
   }
   
   def update(values:SeqValue):State[Update, SeqValue] = {
