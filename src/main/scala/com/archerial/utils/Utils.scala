@@ -290,15 +290,23 @@ object StateUtil{
 
   def return_[S,A](x:A) = init[S].map((_) => x)
 
-   def forS[S,A,B,C[SB] <: SeqLike[SB, C[SB]]](xs:C[A])(f:A => State[S,B])(implicit bf: CanBuildFrom[C[A], State[S,B], C[State[S,B]]], bf2: CanBuildFrom[C[B], B, C[B]]):State[S,C[B]] = {
+   def forS3[S,A,B,C[X] <: SeqLike[X, C[X]]](xs:C[A])(f:A => State[S,B])(implicit bf: CanBuildFrom[C[A], State[S,B], C[State[S,B]]], bf2: CanBuildFrom[C[B], B, C[B]]):State[S,C[B]] = {
    	 reduceStates[S,B,C](xs.map(f):C[State[S,B]])
    }
 
-	def reduceStates[S,A,C[SA] <: SeqLike[SA, C[SA]]](xs: C[State[S,A]])(implicit bf: CanBuildFrom[C[A], A, C[A]]):State[S,C[A]] = {
+   def forS[S,A,B,C[X] <: SeqLike[X, C[X]],SEQ[X] <: SeqLike[X,SEQ[X]]](xs:C[A])(f:A => State[S,B])(implicit bf: CanBuildFrom[C[A], State[S,B], SEQ[State[S,B]]], bf2: CanBuildFrom[SEQ[B], B, SEQ[B]],bf3:CanBuildFrom[SEQ[B],B,C[B]]):State[S,C[B]]={
+   	 val bss = reduceStates[S,B,SEQ](xs.map(f))
+	 for (bs<-bss)yield{
+	 val buf = bf3.apply()
+	 buf ++= bs
+	 buf.result()
+	 }
+   }
+
+	def reduceStates[S,A,C[X] <: SeqLike[X, C[X]]](xs: C[State[S,A]])(implicit bf: CanBuildFrom[C[A], A, C[A]]):State[S,C[A]] = {
   	  xs.reverse.foldLeft(
 		return_[S,C[A]](bf.apply.result)
   	  )((ys:State[S,C[A]], xs:State[S,A] ) =>  
   		for (x <- xs; y:C[A] <- ys) yield x +: y)
 	}
-
 }
