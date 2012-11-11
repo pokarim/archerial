@@ -201,6 +201,7 @@ object FromValue{
   implicit def toDOCfromRawVal(self:RawVal):DOC = self match {
 	case RawVal.Str(value) => TEXT(withColor(2, "\"%s\"" ,value.toString))
 	case RawVal.Null => TEXT("NULL")
+	case RawVal.GeneratedId(x) => TEXT("gen(%s)" format (x))
 	case _ => TEXT(self.toShortStr) :DOC
 
   }

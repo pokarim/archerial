@@ -279,8 +279,6 @@ object SeqUtil {
   }
 }
 
-
-
 import scala.collection.{TraversableLike,SeqLike}
 import scala.collection.generic.CanBuildFrom
 
@@ -299,10 +297,26 @@ object StateUtil{
 	}
   }
 
+  def forFlatS[S,A,B,C[X] <: SeqLike[X, C[X]],SEQ[X] <: SeqLike[X,SEQ[X]]](xs:C[A])(f:A => State[S,Seq[B]])(implicit bf: CanBuildFrom[C[A], State[S,Seq[B]], SEQ[State[S,Seq[B]]]], bf2: CanBuildFrom[SEQ[B], B, SEQ[B]],bf3:CanBuildFrom[SEQ[B],B,C[B]]):State[S,C[B]]={
+   	val bss = reduceFlatStates[S,B,SEQ](xs.map(f):SEQ[State[S,Seq[B]]])
+	for (bs <- bss)yield{
+	  val buf = bf3.apply()
+	  buf ++= bs
+	  buf.result()
+	}
+  }
+
   def reduceStates[S,A,C[X] <: SeqLike[X, C[X]]](xs: C[State[S,A]])(implicit bf: CanBuildFrom[C[A], A, C[A]]):State[S,C[A]] = {
   	xs.reverse.foldLeft(
 	  return_[S,C[A]](bf.apply.result)
   	)((ys:State[S,C[A]], xs:State[S,A] ) =>  
   	  for (x <- xs; y:C[A] <- ys) yield x +: y)
+  }
+
+  def reduceFlatStates[S,A,C[X] <: SeqLike[X, C[X]]](xs: C[State[S,Seq[A]]])(implicit bf: CanBuildFrom[C[A], A, C[A]]):State[S,C[A]] = {
+  	xs.foldLeft(
+	  return_[S,C[A]](bf.apply.result)
+  	)((ys:State[S,C[A]], xs:State[S,Seq[A]] ) =>  
+  	  for (x <- xs; y:C[A] <- ys) yield y ++ x)
   }
 }

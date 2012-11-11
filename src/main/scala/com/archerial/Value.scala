@@ -50,6 +50,16 @@ object RawVal{
 	def toSQLString = value.toString
     def toParameterValue:ParameterValue[scala.Long] = anorm.toParameterValue(value)
   }
+
+  case class GeneratedId (value: scala.Long) extends Type {
+	def toSQLString = "G(%s)" format value.toString
+    def toParameterValue:ParameterValue[scala.Long] = anorm.toParameterValue(value)
+    def next() = copy(value=value + 1)
+  }
+  object GeneratedId{
+    val zero = GeneratedId(0)
+  }
+
   case class Bool(value: Boolean) extends Type{
 	def toSQLString = value.toString
 	def toParameterValue:ParameterValue[scala.Boolean] = anorm.toParameterValue(value)

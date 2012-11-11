@@ -201,7 +201,9 @@ case class Composition(left:Arrow,right:Arrow) extends Arrow {
   	"A >>> B, A.cod must be equal to B.dom but %s != %s"
   	format (left.cod , right.dom))
 }
-
+object >>> {
+  def unapply(x:Composition):Option[(Arrow,Arrow)] = Some((x.left,x.right))
+}
 object Composition{
   def gen(left:Arrow,right:Arrow):Arrow = if (right.isIdentity) left else
 	left match {
